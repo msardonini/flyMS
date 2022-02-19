@@ -1,0 +1,15 @@
+[submodule "external/librobotcontrol"]
+	path = external/librobotcontrol
+	url = git@github.com:beagleboard/librobotcontrol.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = git@github.com:gabime/spdlog.git
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = git@github.com:jbeder/yaml-cpp.git
+[submodule "external/eigen"]
+	path = external/eigen
+	url = git@gitlab.com:libeigen/eigen.git
+[submodule "external/HTTPRequest"]
+	path = external/HTTPRequest
+	url = git@github.com:elnormous/HTTPRequest.git
