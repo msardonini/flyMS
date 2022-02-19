@@ -8,12 +8,10 @@ import yaml
 app = Flask(__name__)
 api = Api(app)
 
-
-
 class Config(Resource):
     def get(self):
 
-        with open('../config/flyMSConfig_dji_450.yaml', "r") as stream:
+        with open('/home/debian/.config/flyMSConfig.yaml', "r") as stream:
             try:
                 data = yaml.safe_load(stream)
                 print(data)

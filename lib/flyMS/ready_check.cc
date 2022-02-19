@@ -27,6 +27,7 @@ int ReadyCheck::WaitForStartSignal() {
   int count = 1, toggle = 0, reset_toggle = 0;
   float switch_val[2] = {0.0f, 0.0f};
   bool first_run = true;
+  rc_led_set(RC_LED_RED, 0);
   printf("Toggle the kill swtich twice and leave up to initialize\n");
   while (count < 6 && rc_get_state() != EXITING && is_running_.load()) {
     // Blink the green LED light to signal that the program is ready
@@ -71,5 +72,7 @@ int ReadyCheck::WaitForStartSignal() {
 
   printf("\nInitialized! Starting program\n");
   rc_led_set(RC_LED_GREEN, 1);
+
+  rc_dsm_cleanup();
   return 0;
 }

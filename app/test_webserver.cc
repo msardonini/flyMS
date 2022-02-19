@@ -33,7 +33,6 @@
 #include "yaml-cpp/yaml.h"
 
 int main(int argc, char *argv[]) {
-
   try {
     // you can pass http::InternetProtocol::V6 to Request to make an IPv6
     // request

@@ -29,9 +29,10 @@ function build_flyMS {
 function prep_output_folder {
   [ -d "build" ] && rm -rf products
   mkdir products
+  mkdir products/.config
   cp -r build/bin products
   cp -r scripts/* products/bin
-  [ ! -z $1 ] && cp $1 products/flyMSConfig.yaml
+  [ ! -z $1 ] && cp $1 products/.config/flyMSConfig.yaml
 }
 
 function rm_output_folder {

@@ -8,7 +8,8 @@ add_definitions(-DDEBUG)
 
 #Build flyMS
 add_library(flyMS STATIC
-  flyMS.cc
+  FlightCore.cc
+  config_requestor.cc
   gps.cc
   imu/base.cc
   imu/dmp.cc
@@ -27,6 +28,7 @@ target_link_libraries(flyMS
     Eigen3::Eigen
     filter
     yaml-cpp
+    HTTPRequest
 )
 
 target_include_directories(flyMS

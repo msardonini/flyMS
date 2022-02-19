@@ -1,13 +1,13 @@
 [Unit]
-Description=pruHandler
+Description=pru_handler
 Requires=systemd-modules-load.service
 After=network.target robotcontrol.service dbus-org.freedesktop.Avahi.service
 
 [Service]
 Type=simple
-PIDFile=/var/run/pruHandler.pid
+PIDFile=/var/run/pru_handler.pid
 User=root
-ExecStart=/home/debian/bin/pruHandler
+ExecStart=/home/debian/bin/pru_handler_app
 
 [Install]
 WantedBy=multi-user.target

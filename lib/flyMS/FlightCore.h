@@ -1,12 +1,11 @@
 /**
- * @file flyMS.cpp
- * @brief flyMS program source code.
+ * @file FlightCore.h
+ * @brief Header for the FlightCore object
  *
  * @author Mike Sardonini
  * @date 10/15/2018
  */
-#ifndef FLYMS_H
-#define FLYMS_H
+#pragma once
 
 // System Includes
 #include <array>
@@ -29,20 +28,22 @@
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
 
-class flyMS {
- public:
-  flyMS(const YAML::Node &input_params);
+namespace flyMS {
+
+class FlightCore {
+public:
+  FlightCore(const YAML::Node &input_params);
 
   // TODO: write other ctors as per rule of 3
-  ~flyMS();
+  ~FlightCore();
 
   // Main thread which controls the inner loop FCS
-  int FlightCore();
+  int flight_core();
 
   // Initialize the system's hardware
   int StartupRoutine();
 
- private:
+private:
   // Get the current time in microseconds
   inline uint64_t GetTimeMicroseconds();
 
@@ -82,7 +83,7 @@ class flyMS {
 
   // Object and Data struct from the setpoint manager
   std::unique_ptr<Setpoint> setpoint_module_;
-  SetpointData setpoint_;  // TODO Make this a non class member
+  SetpointData setpoint_; // TODO Make this a non class member
 
   // Object and Data struct from the gps manager
   gps gps_module_;
@@ -107,4 +108,4 @@ class flyMS {
   YAML::Node config_params_;
 };
 
-#endif  // FLYMS_H
+} // namespace flyMS

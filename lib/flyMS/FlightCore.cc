@@ -1,12 +1,12 @@
 /**
- * @file flyMS.cpp
- * @brief flyMS program source code.
+ * @file FlightCore.cc
+ * @brief Main control loop for the flyMS program
  *
  * @author Mike Sardonini
  * @date 10/15/2018
  */
 
-#include "flyMS/flyMS.h"
+#include "flyMS/FlightCore.h"
 
 #include <pthread.h>
 #include <sys/stat.h>
@@ -20,7 +20,9 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-flyMS::flyMS(const YAML::Node &config_params)
+namespace flyMS {
+
+FlightCore::FlightCore(const YAML::Node &config_params)
     : ulog_(),
       setpoint_module_(),
       gps_module_(config_params),
@@ -33,16 +35,16 @@ flyMS::flyMS(const YAML::Node &config_params)
   delta_t_ = config_params["delta_t"].as<float>();
 
   YAML::Node controller = config_params["controller"];
-  max_control_effort_ = controller["max_control_effort"].as<std::array<float, 3> >();
+  max_control_effort_ = controller["max_control_effort"].as<std::array<float, 3>>();
 }
 
 // Default Destructor
-flyMS::~flyMS() {
+FlightCore::~FlightCore() {
   // Join the thread if executing
   if (flightcore_thread_.joinable()) flightcore_thread_.join();
 }
 
-int flyMS::FlightCore() {
+int FlightCore::flight_core() {
   while (rc_get_state() != EXITING) {
     /******************************************************************
      *           Grab the time for Periphal Apps and Logs              *
@@ -84,7 +86,8 @@ int flyMS::FlightCore() {
       // Transition to start flyStereo
       mavlink_interface_.SendStartCommand();
 
-      // Assume that the current throttle value will be an average value to keep altitude
+      // Assume that the current throttle value will be an average value to keep
+      // altitude
       standing_throttle_ = setpoint_.throttle;
       initial_yaw_ = imu_data_.euler[2];
 
@@ -124,7 +127,7 @@ int flyMS::FlightCore() {
     } else if (flight_mode_ == 2) {  // Acro mode
       droll_setpoint = setpoint_.euler_ref[0];
     } else {
-      spdlog::error("[flyMS] Error! Invalid flight mode. Shutting down now");
+      spdlog::error("[FlightCore] Error! Invalid flight mode. Shutting down now");
       rc_set_state(EXITING);
       return -1;
     }
@@ -228,23 +231,26 @@ int flyMS::FlightCore() {
     if (sleep_time < static_cast<uint64_t>(delta_t_ * 1.0E6)) {
       rc_usleep(sleep_time);
     } else {
-      spdlog::warn("[flyMS] Error! Control thread too slow! time in micro seconds: {}", (timeFinish - timeStart));
+      spdlog::warn(
+          "[FlightCore] Error! Control thread too slow! time in micro "
+          "seconds: {}",
+          (timeFinish - timeStart));
     }
   }
   return 0;
 }
 
-uint64_t flyMS::GetTimeMicroseconds() {
+uint64_t FlightCore::GetTimeMicroseconds() {
   return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
       .count();
   // return (uint64_t)tv.tv_sec * 1E6 + (uint64_t)tv.tv_nsec / 1E3;
 }
 
-int flyMS::ConsolePrint() {
+int FlightCore::ConsolePrint() {
   //  spdlog::info("time {:3.3f} ", control->time);
   //  spdlog::info("Alt_ref {:3.1f} ",control->alt_ref);
-  // spdlog::info("U1: {:2.2f}, U2: {:2.2f}, U3: {:2.2f}, U4: {:2.2f} ", u_[0], u_[1], u_[2], u_[3]);
-  // spdlog::info("Aux {:2.1f} ", setpoint_.Aux[0]);
+  // spdlog::info("U1: {:2.2f}, U2: {:2.2f}, U3: {:2.2f}, U4: {:2.2f} ", u_[0],
+  // u_[1], u_[2], u_[3]); spdlog::info("Aux {:2.1f} ", setpoint_.Aux[0]);
   //  spdlog::info("function: {}",rc_get_dsm_ch_normalized(6));
   //  spdlog::info("num wraps {} ",control->num_wraps);
   spdlog::info(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ", setpoint_.throttle,
@@ -259,9 +265,11 @@ int flyMS::ConsolePrint() {
   //   spdlog::info(" Pos N {:2.3f} ", control->ekf_filter.output.ned_pos[0]);
   //  spdlog::info(" Pos E {:2.3f} ", control->ekf_filter.output.ned_pos[1]);
   //  spdlog::info(" Pos D {:2.3f} ", control->ekf_filter.output.ned_pos[2]);
-  // spdlog::info(" DRoll {:1.2f}, DPitch {:1.2f}, DYaw {:2.3f}", imu_data_.eulerRate[0],
+  // spdlog::info(" DRoll {:1.2f}, DPitch {:1.2f}, DYaw {:2.3f}",
+  // imu_data_.eulerRate[0],
   //   imu_data_.eulerRate[1], imu_data_.eulerRate[2]);
-  // spdlog::info("uroll {:2.3f}, upitch {:2.3f}, uyaw {:2.3f}", u_euler_[0], u_euler_[1],
+  // spdlog::info("uroll {:2.3f}, upitch {:2.3f}, uyaw {:2.3f}", u_euler_[0],
+  // u_euler_[1],
   //   u_euler_[2]);
   //  spdlog::info(" GPS pos lat: {:2.2f}", control->GPS_data.pos_lat);
   //  spdlog::info(" GPS pos lon: {:2.2f}", control->GPS_data.pos_lon);
@@ -270,7 +278,7 @@ int flyMS::ConsolePrint() {
   return 0;
 }
 
-int flyMS::CheckOutputRange(std::array<float, 4> &u) {
+int FlightCore::CheckOutputRange(std::array<float, 4> &u) {
   float largest_value = 1;
   float smallest_value = 0;
 
@@ -288,7 +296,7 @@ int flyMS::CheckOutputRange(std::array<float, 4> &u) {
   return 0;
 }
 
-std::string flyMS::GetLogDir(const std::string &log_location) {
+std::string FlightCore::GetLogDir(const std::string &log_location) {
   int run_number = 1;
   std::stringstream run_str;
   run_str << std::internal << std::setfill('0') << std::setw(3) << run_number;
@@ -309,7 +317,7 @@ std::string flyMS::GetLogDir(const std::string &log_location) {
   return run_folder;
 }
 
-void flyMS::InitializeSpdlog(const std::string &log_dir) {
+void FlightCore::InitializeSpdlog(const std::string &log_dir) {
   int max_bytes = 1048576 * 20;  // Max 20 MB
   int max_files = 20;
 
@@ -329,7 +337,7 @@ void flyMS::InitializeSpdlog(const std::string &log_dir) {
   flyMS_log->flush_on(spdlog::level::critical);
 }
 
-int flyMS::StartupRoutine() {
+int FlightCore::StartupRoutine() {
   // Create a file for logging and initialize our file logger
   std::string log_dir = GetLogDir(log_filepath_);
   InitializeSpdlog(log_dir);
@@ -345,11 +353,10 @@ int flyMS::StartupRoutine() {
   YAML::Node controller = config_params_["controller"];
   YAML::Node filters = config_params_["filters"];
   flight_filters_ = std::make_unique<FlightFilters>(
-      controller["roll_PID_inner"].as<std::array<float, 3> >(),
-      controller["roll_PID_outer"].as<std::array<float, 3> >(),
-      controller["pitch_PID_inner"].as<std::array<float, 3> >(),
-      controller["pitch_PID_outer"].as<std::array<float, 3> >(), controller["yaw_PID"].as<std::array<float, 3> >(),
-      filters["imu_lpf_num"].as<std::vector<float> >(), filters["imu_lpf_den"].as<std::vector<float> >(), delta_t_,
+      controller["roll_PID_inner"].as<std::array<float, 3>>(), controller["roll_PID_outer"].as<std::array<float, 3>>(),
+      controller["pitch_PID_inner"].as<std::array<float, 3>>(),
+      controller["pitch_PID_outer"].as<std::array<float, 3>>(), controller["yaw_PID"].as<std::array<float, 3>>(),
+      filters["imu_lpf_num"].as<std::vector<float>>(), filters["imu_lpf_den"].as<std::vector<float>>(), delta_t_,
       controller["pid_LPF_const_sec"].as<float>());
 
   mavlink_interface_.Init();
@@ -361,7 +368,7 @@ int flyMS::StartupRoutine() {
   pru_client_.startPruClient();
 
   // Start the flight program
-  flightcore_thread_ = std::thread(&flyMS::FlightCore, this);
+  flightcore_thread_ = std::thread(&FlightCore::flight_core, this);
 
   // Start the flight program
   sched_param sch_params;
@@ -372,3 +379,5 @@ int flyMS::StartupRoutine() {
   }
   return 0;
 }
+
+}  // namespace flyMS

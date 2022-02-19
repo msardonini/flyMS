@@ -38,6 +38,7 @@ Setpoint::Setpoint(const YAML::Node& config_params) : is_running_(true), ready_t
 }
 
 Setpoint::~Setpoint() {
+  rc_dsm_cleanup();
   is_running_.store(false);
   if (setpoint_thread_.joinable()) {
     setpoint_thread_.join();
