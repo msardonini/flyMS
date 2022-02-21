@@ -5,8 +5,7 @@
  * @author Mike Sardonini
  * @date 10/15/2018
  */
-#ifndef GPS_H
-#define GPS_H
+#pragma once
 
 // System Includes
 #include <fcntl.h>
@@ -27,6 +26,8 @@
 #include <roboticscape.h>
 
 #include "yaml-cpp/yaml.h"
+
+namespace flyMS {
 
 #define D2R_GPS 0.01744
 #define BAUDRATE B4800
@@ -88,4 +89,4 @@ class gps {
   int serialFd;
 };
 
-#endif  // GPS_H
+}  // namespace flyMS

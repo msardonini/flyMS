@@ -3,7 +3,7 @@ Description=flyMS
 After=network.target robotcontrol.service pruHandler.service
 
 [Service]
-User=root
+User=debian
 Restart=always
 PIDFile=/var/run/flyMS.pid
 ExecStart=/home/debian/bin/flyMS_app

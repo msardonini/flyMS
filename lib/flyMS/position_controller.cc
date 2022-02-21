@@ -2,8 +2,11 @@
 
 #include <iostream>
 
+#include "flyMS/imu/Imu.h"
+
+namespace flyMS {
+
 PositionController::PositionController(const YAML::Node &config_params) {
-  delta_t_ = config_params["delta_t"].as<float>();
   YAML::Node position_controller = config_params["position_controller"];
   pid_coeffs_x_[0] = position_controller["pid_coeffs_x_outer"].as<std::array<float, 3> >();
   pid_coeffs_x_[1] = position_controller["pid_coeffs_x_inner"].as<std::array<float, 3> >();
@@ -16,9 +19,9 @@ PositionController::PositionController(const YAML::Node &config_params) {
   RPY_saturation_limits_ = position_controller["RPY_saturation_limits"].as<std::array<float, 3> >();
 
   for (int i = 0; i < 2; i++) {
-    pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, delta_t_);
-    pid_[1][i] = generatePID(pid_coeffs_y_[i][0], pid_coeffs_y_[i][1], pid_coeffs_y_[i][2], 0.15, delta_t_);
-    pid_[2][i] = generatePID(pid_coeffs_z_[i][0], pid_coeffs_z_[i][1], pid_coeffs_z_[i][2], 0.15, delta_t_);
+    pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, LOOP_DELTA_T);
+    pid_[1][i] = generatePID(pid_coeffs_y_[i][0], pid_coeffs_y_[i][1], pid_coeffs_y_[i][2], 0.15, LOOP_DELTA_T);
+    pid_[2][i] = generatePID(pid_coeffs_z_[i][0], pid_coeffs_z_[i][1], pid_coeffs_z_[i][2], 0.15, LOOP_DELTA_T);
   }
 
   // Conversion matrix to map roll, pitch, throttle commands from PID output in XYZ frame
@@ -91,3 +94,5 @@ void PositionController::ResetController() {
     }
   }
 }
+
+}  // namespace flyMS

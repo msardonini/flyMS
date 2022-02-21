@@ -7,8 +7,7 @@ struct StateData {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   uint64_t timestamp_us;
 
-  Eigen::Vector3f euler;  // Euler angles of aircraft (in roll, pitch, yaw)
-  Eigen::Vector3f eulerPrevious;
+  Eigen::Vector3f euler;      // Euler angles of aircraft (in roll, pitch, yaw)
   Eigen::Vector3f eulerRate;  // First derivative of euler angles (in roll/s, pitch/s, yaw/s)
 
   Eigen::Vector3f accel;  // Raw data from accelerometer

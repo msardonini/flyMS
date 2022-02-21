@@ -30,8 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-#ifndef SRC_FLYMS_INCLUDE_ULOG_ULOG_H_
-#define SRC_FLYMS_INCLUDE_ULOG_ULOG_H_
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -39,6 +38,8 @@
 #include "flyMS/setpoint.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/types/vio_data.h"
+
+namespace flyMS {
 
 struct ULogFlightMsg {
   ULogFlightMsg() {}
@@ -214,7 +215,7 @@ class ULog {
 
   ~ULog();
 
-  int InitUlog(const std::string &filename);
+  int init(const std::string &filename);
 
   template <typename T>
   void WriteFlightData(const T &data, uint16_t msg_id) {
@@ -253,4 +254,4 @@ class ULog {
   std::ofstream fd_;
 };
 
-#endif  // SRC_FLYMS_INCLUDE_ULOG_ULOG_H_
+}  // namespace flyMS

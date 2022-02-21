@@ -1,5 +1,4 @@
-#ifndef FLYMS_INCLUDE_FLYMS_POSITION_CONTROLLER_H_
-#define FLYMS_INCLUDE_FLYMS_POSITION_CONTROLLER_H_
+#pragma once
 
 #include <mutex>
 
@@ -8,10 +7,7 @@
 #include "flyMS/types/vio_data.h"
 #include "yaml-cpp/yaml.h"
 
-template <typename T>
-struct pos_vel {
-  std::array<std::array<T, 3>, 2> data;
-};
+namespace flyMS {
 
 class PositionController {
  public:
@@ -47,12 +43,10 @@ class PositionController {
 
   std::mutex output_mutex_;
 
-  // Configurable params
-  float delta_t_;
   // PID Constants for the outer and inner loops (position/velocity)for x, y, and z
   std::array<std::array<float, 3>, 2> pid_coeffs_x_;
   std::array<std::array<float, 3>, 2> pid_coeffs_y_;
   std::array<std::array<float, 3>, 2> pid_coeffs_z_;
 };
 
-#endif  // FLYMS_INCLUDE_FLYMS_POSITION_CONTROLLER_H_
+}  // namespace flyMS

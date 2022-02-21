@@ -11,8 +11,7 @@ add_library(flyMS STATIC
   FlightCore.cc
   config_requestor.cc
   gps.cc
-  imu/base.cc
-  imu/dmp.cc
+  imu/Imu.cc
   pru_client.cc
   setpoint.cc
   position_controller.cc

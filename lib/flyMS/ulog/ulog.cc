@@ -10,11 +10,13 @@
 #include <iostream>
 #include <string>
 
+namespace flyMS {
+
 ULog::ULog() {}
 
 ULog::~ULog() { fd_.close(); }
 
-int ULog::InitUlog(const std::string &log_folder) {
+int ULog::init(const std::string &log_folder) {
   // Create the log file
   fd_ = std::ofstream(log_folder + "/logger.ulg", std::ios::binary);
   if (!fd_.is_open()) {
@@ -106,3 +108,5 @@ uint64_t ULog::getTimeMircos() {
 }
 
 void ULog::WriteMessage(void *buf, size_t size) { fd_.write(reinterpret_cast<const char *>(buf), size); }
+
+}  // namespace flyMS

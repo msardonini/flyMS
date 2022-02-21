@@ -1,3 +1,4 @@
+project(flyMS LANGUAGES CXX C)
 cmake_minimum_required(VERSION 3.5)
 
 # # Get the architecture of the CPU building this
@@ -16,10 +17,15 @@ endif(host64bit)
 
 
 
-project(flyMS LANGUAGES CXX C)
 
 # Set c++ standard
 set (CMAKE_CXX_STANDARD 20)
+
+
+set(CMAKE_CXX_FLAGS "-pg")
+
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g")
 
 # Set the binary and library directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

@@ -6,10 +6,8 @@
  * @date 10/15/2018
  */
 
-#ifndef SETPOINT_H
-#define SETPOINT_H
+#pragma once
 
-// System includes
 #include <math.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -28,6 +26,8 @@
 #include "flyMS/position_controller.h"
 #include "rc/dsm.h"
 #include "yaml-cpp/yaml.h"
+
+namespace flyMS {
 
 struct SetpointData {
   float euler_ref[3];     // Reference (Desired) Position in Roll, Pitch, Yaw
@@ -97,4 +97,4 @@ class Setpoint {
   float delta_t_;
 };
 
-#endif  // SETPOINT_H
+}  // namespace flyMS

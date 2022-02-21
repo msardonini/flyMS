@@ -11,13 +11,18 @@
 #include <chrono>
 #include <iostream>
 
+#include "flyMS/imu/Imu.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
+
+namespace flyMS {
+
+constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
+constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
 
 Setpoint::Setpoint(const YAML::Node& config_params) : is_running_(true), ready_to_send_(false) {
   is_debug_mode_ = config_params["debug_mode"].as<bool>();
   flight_mode_ = config_params["flight_mode"].as<int>();
-  delta_t_ = config_params["delta_t"].as<float>();
 
   YAML::Node setpoint_params = config_params["setpoint"];
   max_setpoints_stabilized_ = setpoint_params["max_setpoints_stabilized"].as<std::array<float, 3> >();
@@ -89,7 +94,7 @@ int Setpoint::SetpointManager() {
     setpoint_mutex_.lock();
     HandleRcData(dsm2_data);
     setpoint_mutex_.unlock();
-    std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(delta_t_ * 1.0E6)));
+    std::this_thread::sleep_for(std::chrono::microseconds(SETPOINT_LOOP_SLEEP_TIME_US));
   }
   return 0;
 }
@@ -144,7 +149,8 @@ int Setpoint::HandleRcData(std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data) {
 
   // Finally Update the integrator on the yaw reference value
   setpoint_data_.euler_ref[2] =
-      setpoint_data_.euler_ref[2] + (setpoint_data_.yaw_rate_ref[0] + setpoint_data_.yaw_rate_ref[1]) * delta_t_ / 2;
+      setpoint_data_.euler_ref[2] +
+      (setpoint_data_.yaw_rate_ref[0] + setpoint_data_.yaw_rate_ref[1]) * 1 / (2 * SETPOINT_LOOP_FRQ);
 
   ready_to_send_.store(true);
 
@@ -155,10 +161,12 @@ void Setpoint::SetYawRef(float ref) { setpoint_data_.euler_ref[2] = ref; }
 
 int Setpoint::RcErrHandler() {
   dsm2_timeout_++;
-  if (dsm2_timeout_ > 1.5 / delta_t_) {  // If packet hasn't been received for 1.5 seconds
+  if (dsm2_timeout_ > 2 * SETPOINT_LOOP_FRQ) {  // If packet hasn't been received for 2 seconds
     spdlog::critical("Lost Connection with Remote!! Shutting Down Immediately!");
     rc_set_state(EXITING);
     return -1;
   }
   return 0;
 }
+
+}  // namespace flyMS

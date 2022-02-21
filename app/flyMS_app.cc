@@ -47,23 +47,20 @@ int main(int argc, char *argv[]) {
   // Enable the signal handler so we can exit cleanly on SIGINT
   initSignalHandler();
 
-  bool is_debug_mode = false;
-  std::string config_filepath;
+  bool is_debug_mode = true;
   // Parse the command line arguments
   int in;
-  while ((in = getopt(argc, argv, "c:dr:h")) != -1) {
+  while ((in = getopt(argc, argv, "dr:h")) != -1) {
     switch (in) {
-      case 'c':
-        config_filepath = std::string(optarg);
-        break;
       case 'd':
         is_debug_mode = true;
-        printf("Running in Debug mode \n");
+        std::cout << "Running in Debug mode" << std::endl;
         break;
       case 'r':
         // Run Program in replay mode, need to provide filepath to log file
-        // TODO: Add command line arg parser
-        printf("Running in Replay mode \n");
+        std::cout << "Running in Replay mode" << std::endl;
+        std::cout << "Replay mode not supported yet" << std::endl;
+        return 0;
         break;
       case 'h':
         // Display the command line help options
@@ -71,33 +68,26 @@ int main(int argc, char *argv[]) {
         // print_usage();
         return 0;
       default:
-        printf("Invalid Argument \n");
+        std::cout << "Invalid Argument" << std::endl;
         return -1;
     }
   }
 
-  // // Make sure the user provided a path to a confile file
-  // if (config_filepath.empty()) {
-  //   std::cout << "Reqired parameter: -c" << std::endl;
-  //   return -1;
-  // }
-
-  // Perform the ready check before starting the flight program
+  // Wait for the signal before starting the flight program
   if (!is_debug_mode) {
-    ReadyCheck ready_check;
-    ready_check.WaitForStartSignal();
+    if (wait_for_start_signal()) {
+      return -1;
+    }
   }
 
   // Load the Yaml Node
-  YAML::Node config_params = flyMS::get_config("http://localhost:5000/config");
+  YAML::Node config_params = flyMS::get_config("http://localhost:5001/config");
   if (config_params.size() == 0) {
     handle_error();
     return -1;
   } else {
     config_params = config_params["flyMSParams"];
   }
-
-  // YAML::Node config_params = YAML::LoadFile(config_filepath)["flyMSParams"];
 
   // Override the debug flag if requested at the command line
   if (is_debug_mode) {
@@ -110,8 +100,8 @@ int main(int argc, char *argv[]) {
   // Initialize the flight hardware
   if (fly.StartupRoutine()) {
     rc_set_state(EXITING);
+    spdlog::error("Startup failed, exiting");
   }
-
   while (rc_get_state() != EXITING) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }

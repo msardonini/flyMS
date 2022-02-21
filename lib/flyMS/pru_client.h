@@ -5,8 +5,8 @@
  * @author Mike Sardonini
  * @date 10/15/2018
  */
-#ifndef PRU_CLIENT_H
-#define PRU_CLIENT_H
+
+#pragma once
 
 // System Includes
 #include <arpa/inet.h>
@@ -28,8 +28,7 @@
 // Package Includes
 #include "roboticscape.h"
 
-// Locally used macros
-#define PRU_PID_FILE "/var/run/pru_handler.pid"
+namespace flyMS {
 
 class pruClient {
  public:
@@ -48,4 +47,4 @@ class pruClient {
   int sockfd_;
 };
 
-#endif  // PRU_CLIENT_H
+}  // namespace flyMS

@@ -14,16 +14,28 @@ function print_usage {
   echo "                              send outputs to. Required for cross compiling"
   echo "      --config {config_file}  Path to a config file to use for flight. This "
   echo "                              will overwrite an existing config file"
-  echo "      -b                      Builds Docker Image for Build Environment"
+  echo "      -b                      Builds Docker Image for Build Environment. "
+  echo "                              This needs to be run once before flyMS can be built"
   echo "      -h                      Prints this help menu and exits"
 }
 
 function build_docker_image {
   docker build --build-arg UID=`id -u` --build-arg GID=`id -g` -t flyms_builder:buster ./docker
+
+
+  if [ $? -ne 0 ]; then
+    echo "docker build failed! Exiting"
+    exit -1
+  fi
 }
 
 function build_flyMS {
-  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build"
+  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -C /opt/builder/build"
+
+  if [ $? -ne 0 ]; then
+    echo "flyMS build failed! Exiting"
+    exit -1
+  fi
 }
 
 function prep_output_folder {

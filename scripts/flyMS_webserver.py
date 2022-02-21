@@ -27,4 +27,4 @@ class Config(Resource):
 api.add_resource(Config, '/config')  # '/users' is our entry point for Users
 
 if __name__ == '__main__':
-    app.run(debug=True)  # run our Flask app
+    app.run(debug=True, port=5001)  # run our Flask app

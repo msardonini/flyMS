@@ -8,10 +8,15 @@
 
 #include "flyMS/pru_client.h"
 
+// #include <string_view>
+
 #include "spdlog/spdlog.h"
 #include "unistd.h"
 
+namespace flyMS {
+
 constexpr int NUM_CHANNELS = 4;
+constexpr char PRU_PID_FILE[] = "/var/run/pru_handler.pid";
 
 pruClient::pruClient() {}
 
@@ -68,7 +73,7 @@ int pruClient::startPruClient() {
   }
 
   // Connect to the socket
-  if (connect(sockfd_, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+  if (connect(sockfd_, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
     spdlog::error("Error : Connect Failed: {}", strerror(errno));
     return -1;
   }
@@ -108,3 +113,5 @@ int pruClient::setSendData(std::array<float, NUM_CHANNELS> u) {
 
   return 0;
 }
+
+}  // namespace flyMS

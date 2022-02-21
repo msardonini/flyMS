@@ -1,5 +1,4 @@
-#ifndef SRC_FLYMS_INCLUDE_FLYMS_MAVLINK_INTERFACE_H_
-#define SRC_FLYMS_INCLUDE_FLYMS_MAVLINK_INTERFACE_H_
+#pragma once
 
 #include <atomic>
 #include <thread>
@@ -8,6 +7,8 @@
 #include "flyMS/types/vio_data.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
+
+namespace flyMS {
 
 class MavlinkInterface {
  public:
@@ -53,4 +54,4 @@ class MavlinkInterface {
   std::mutex trigger_time_mutex_;
 };
 
-#endif  // SRC_FLYMS_INCLUDE_FLYMS_MAVLINK_INTERFACE_H_
+}  // namespace flyMS

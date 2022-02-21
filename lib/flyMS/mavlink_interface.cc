@@ -10,6 +10,8 @@
 #include "flyMS/mavlink/fly_stereo/mavlink.h"
 #include "rc/gpio.h"
 
+namespace flyMS {
+
 MavlinkInterface::MavlinkInterface(const YAML::Node input_params) {
   YAML::Node mavlink_params = input_params["mavlink_interface"];
   serial_dev_file_ = mavlink_params["serial_device"].as<std::string>();
@@ -162,52 +164,52 @@ void MavlinkInterface::SerialReadThread() {
 
     if (ret < 0) {
       std::cerr << "Error on read(), errno: " << strerror(errno) << std::endl;
-    }
+    } else if (ret > 0) {
+      for (int i = 0; i < ret; i++) {
+        mavlink_status_t mav_status;
+        mavlink_message_t mav_message;
+        uint8_t msg_received = mavlink_parse_char(MAVLINK_COMM_1, buf[i], &mav_message, &mav_status);
 
-    for (int i = 0; i < ret; i++) {
-      mavlink_status_t mav_status;
-      mavlink_message_t mav_message;
-      uint8_t msg_received = mavlink_parse_char(MAVLINK_COMM_1, buf[i], &mav_message, &mav_status);
+        if (msg_received) {
+          switch (mav_message.msgid) {
+            case MAVLINK_MSG_ID_IMU: {
+              mavlink_imu_t attitude_msg;
+              mavlink_msg_imu_decode(&mav_message, &attitude_msg);
+              break;
+            }
+            case MAVLINK_MSG_ID_RESET_COUNTERS: {
+              mavlink_reset_counters_t reset_msg;
+              mavlink_msg_reset_counters_decode(&mav_message, &reset_msg);
 
-      if (msg_received) {
-        switch (mav_message.msgid) {
-          case MAVLINK_MSG_ID_IMU: {
-            mavlink_imu_t attitude_msg;
-            mavlink_msg_imu_decode(&mav_message, &attitude_msg);
-            break;
+              // TODO Reset the trigger counter on the IMU
+              std::cout << "Received counter reset msg!\n\n";
+              ResetCounter();
+              break;
+            }
+            case MAVLINK_MSG_ID_VIO: {
+              mavlink_vio_t vio;
+              mavlink_msg_vio_decode(&mav_message, &vio);
+              std::lock_guard<std::mutex> lock(vio_mutex_);
+              vio_.position << vio.position[0], vio.position[1], vio.position[2];
+              vio_.velocity << vio.velocity[0], vio.velocity[1], vio.velocity[2];
+              vio_.quat = Eigen::Quaternion(vio.quat[0], vio.quat[1], vio.quat[2], vio.quat[3]);
+              // spdlog::info("new vio data {}, {}, {}, {}!!", vio.position[0], vio.position[1], vio.position[2],
+              // vio.position[3]);
+              is_new_vio_data_ = true;
+              break;
+            }
+            default:
+              std::cerr << "Unrecognized message with ID:" << static_cast<int>(mav_message.msgid) << std::endl;
+              break;
           }
-          case MAVLINK_MSG_ID_RESET_COUNTERS: {
-            mavlink_reset_counters_t reset_msg;
-            mavlink_msg_reset_counters_decode(&mav_message, &reset_msg);
-
-            // TODO Reset the trigger counter on the IMU
-            std::cout << "Received counter reset msg!\n\n";
-            ResetCounter();
-            break;
-          }
-          case MAVLINK_MSG_ID_VIO: {
-            mavlink_vio_t vio;
-            mavlink_msg_vio_decode(&mav_message, &vio);
-            std::lock_guard<std::mutex> lock(vio_mutex_);
-            vio_.position << vio.position[0], vio.position[1], vio.position[2];
-            vio_.velocity << vio.velocity[0], vio.velocity[1], vio.velocity[2];
-            vio_.quat = Eigen::Quaternion(vio.quat[0], vio.quat[1], vio.quat[2], vio.quat[3]);
-            // spdlog::info("new vio data {}, {}, {}, {}!!", vio.position[0], vio.position[1], vio.position[2],
-            // vio.position[3]);
-            is_new_vio_data_ = true;
-            break;
-          }
-          default:
-            std::cerr << "Unrecognized message with ID:" << static_cast<int>(mav_message.msgid) << std::endl;
-            break;
         }
       }
+    } else {
+      // Sleep so we don't overload the CPU. This isn't an ideal method, but if use a blocking call on read(), we
+      // can't break out of it on the destruction of this object. It will hang forever until bytes are read, which is
+      // not always the case
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
-    // Sleep so we don't overload the CPU. This isn't an ideal method, but if
-    // use a blocking call on read(), we can't break out of it on the
-    // destruction of this object. It will hang forever until bytes are read,
-    // which is not always the case
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
   }
 }
 
@@ -248,3 +250,5 @@ void MavlinkInterface::ResetCounter() {
   std::lock_guard<std::mutex> lock(trigger_time_mutex_);
   trigger_count_ = 0;
 }
+
+}  // namespace flyMS

@@ -4,8 +4,8 @@ flyMSParams:
     enable_gps: 1
     flight_mode: 1
     enable_logging: 1
-    delta_t: 0.01
     mavlink_interface:
+        enable: false
         serial_device: "/dev/ttyS5"
     imu_params:
         enable_barometer: false

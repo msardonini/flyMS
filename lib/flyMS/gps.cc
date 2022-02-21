@@ -10,6 +10,8 @@
 
 #include "spdlog/spdlog.h"
 
+namespace flyMS {
+
 // TODO take our the hardware inits outside of the class constructor
 // Default Constructor
 gps::gps(const YAML::Node input_params) {
@@ -20,7 +22,7 @@ gps::gps(const YAML::Node input_params) {
   this->serialFd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
   if (this->serialFd < 0) {
     perror(MODEMDEVICE);
-    exit(-1);
+    // exit(-1);
   }
 
   bzero(&newtio, sizeof(newtio)); /* clear struct for new port settings */
@@ -254,3 +256,5 @@ void gps::read_raw_gps(char *buf, GPS_data_t *GPS_data) {
   res = read(this->serialFd, buf, 255);
   buf[res] = 0;
 }
+
+}  // namespace flyMS
