@@ -73,9 +73,8 @@ digital_filter_t* initialize_filter(uint8_t order, float num[], float den[]) {
 
 float update_filter(digital_filter_t* filter, float new_val) {
   // Check if the given filter has been initialiazed
-  uint8_t temp = filter->initialized;
-  if (temp == FALSE) {
-    printf("Error!, Need to initialize filter before using it, %u\n", temp);
+  if (!filter || filter->initialized == FALSE) {
+    printf("Error!, Need to initialize filter before using it\n");
     return -1;
   }
 
@@ -119,9 +118,12 @@ float saturateFilter(float filter, float min, float max) {
 }
 
 int zeroFilter(digital_filter_t* filter) {
-  uint8_t i = 0;
+  if (!filter || filter->initialized == FALSE) {
+    printf("Error!, Need to initialize filter before using it\n");
+    return -1;
+  }
 
-  for (i = 0; i < filter->filter_len; i++) {
+  for (uint8_t i = 0; i < filter->filter_len; i++) {
     filter->data[i + 2 * filter->filter_len] = 0;
     filter->data[i + 3 * filter->filter_len] = 0;
   }
@@ -129,13 +131,12 @@ int zeroFilter(digital_filter_t* filter) {
 }
 
 int prefill_filter(digital_filter_t* filter, float value) {
-  if (filter->initialized == FALSE) {
+  if (!filter || filter->initialized == FALSE) {
     printf("Error!, Need to initialize filter before using it\n");
     return -1;
   }
 
-  uint8_t i;
-  for (i = 0; i < (filter->order + 1); i++) {
+  for (uint8_t i = 0; i < (filter->order + 1); i++) {
     filter->data[i + 2 * filter->filter_len] = value;
     filter->data[i + 3 * filter->filter_len] = value;
   }
@@ -183,14 +184,18 @@ digital_filter_t* generatePID(float kp, float ki, float kd, float Tf, float dt) 
 }
 
 void print_filter(digital_filter_t* filter) {
-  uint8_t i;
+  if (!filter) {
+    printf("Error! Received invalid filter\n");
+    return;
+  }
+
   printf("\nNumerator Coefficients: \n");
-  for (i = 0; i <= filter->order; i++) {
+  for (uint8_t i = 0; i <= filter->order; i++) {
     printf("%2.3f, ", (double)filter->data[i]);
   }
   printf("\n");
   printf("Denominator Coefficients: \n");
-  for (i = 0; i <= filter->order; i++) {
+  for (uint8_t i = 0; i <= filter->order; i++) {
     printf("%2.3f, ", (double)filter->data[i + filter->filter_len]);
   }
 }

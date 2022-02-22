@@ -23,6 +23,10 @@ debian hard rtprio 99
 debian soft rtprio 99
 ```
 
+5. Install the required python dependencies on the beaglebone.
+```
+sudo pip3 install pyyaml flask_restful
+```
 
 ## Build Environment
 The stack can be cross compiled (recommended) or compiled natively on the Bealgebone board. The cross compiling system

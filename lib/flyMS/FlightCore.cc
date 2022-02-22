@@ -68,8 +68,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *                          Get Setpoint Data                            *
    ************************************************************************/
-  SetpointData setpoint;
-  setpoint_module_->GetSetpointData(&setpoint);
+  auto setpoint = setpoint_module_->GetSetpointData();
 
   // If we have commanded a switch in Aux, activate the perception system
   if (mavlink_interface_) {
@@ -119,9 +118,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   } else if (flight_mode_ == 2) {  // Acro mode
     droll_setpoint = setpoint.euler_ref[0];
   } else {
-    spdlog::error("[FlightCore] Error! Invalid flight mode. Shutting down now");
-    rc_set_state(EXITING);
-    return -1;
+    throw std::runtime_error("[FlightCore] Error! Invalid flight mode. Shutting down now");
   }
 
   imu_data_body.eulerRate[0] = update_filter(flight_filters_->gyro_lpf[0], imu_data_body.eulerRate[0]);
@@ -137,7 +134,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   } else if (flight_mode_ == 2) {  // Acro mode
     dpitch_setpoint = setpoint.euler_ref[1];
   } else {
-    throw std::runtime_error("Invalid flight mode!");
+    throw std::runtime_error("[FlightCore] Error! Invalid flight mode. Shutting down now");
   }
 
   imu_data_body.eulerRate[1] = update_filter(flight_filters_->gyro_lpf[1], imu_data_body.eulerRate[1]);

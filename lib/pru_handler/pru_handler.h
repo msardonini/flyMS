@@ -7,9 +7,7 @@
  * @author Mike Sardonini
  * @date 11/10/2018
  */
-
-#ifndef PRU_HANDLER_H_
-#define PRU_HANDLER_H_
+#pragma once
 
 // System Includes
 #include <arpa/inet.h>
@@ -28,15 +26,9 @@
 #include <fstream>
 #include <thread>
 
-// Package Includes
-#include <rc/pthread.h>
-#include <rc/servo.h>
-#include <rc/time.h>
-
-#define PID_FILE_PRU "/var/run/pru_handler.pid"
-#define LOG_FILE_PRU "/var/log/pru_handler.log"
-#define PRU_PORT 5000
-#define PRU_NUM_CHANNELS 4
+// #include "rc/pthread.h"
+#include "rc/servo.h"
+#include "rc/time.h"
 
 enum class PruState { UNINITIALIZED, RUNNING, PAUSED, EXITING };
 
@@ -74,5 +66,3 @@ class pruHandler {
 
   std::ofstream logFid;
 };
-
-#endif  // PRU_HANDLER_H_

@@ -10,6 +10,11 @@
 
 #include "pru_handler/pru_handler.h"
 
+constexpr char PID_FILE_PRU[] = "/var/run/pru_handler.pid";
+constexpr char LOG_FILE_PRU[] = "/var/log/pru_handler.log";
+constexpr int PRU_PORT = 5000;
+constexpr int PRU_NUM_CHANNELS = 4;
+
 // Constructor
 pruHandler::pruHandler()
     : pruState(PruState::UNINITIALIZED), listenfd(0), connfd(0), serv_addr(), rcvBuff(), logFid(LOG_FILE_PRU) {}

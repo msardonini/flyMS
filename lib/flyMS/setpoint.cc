@@ -51,14 +51,9 @@ Setpoint::~Setpoint() {
 }
 
 // Gets the data from the local thread. Returns zero if no new data is available
-bool Setpoint::GetSetpointData(SetpointData* setpoint) {
-  if (ready_to_send_.load()) {
-    std::lock_guard<std::mutex> lock(setpoint_mutex_);
-    *setpoint = setpoint_data_;
-    ready_to_send_.store(false);
-    return true;
-  }
-  return false;
+SetpointData Setpoint::GetSetpointData() {
+  std::lock_guard<std::mutex> lock(setpoint_mutex_);
+  return setpoint_data_;
 }
 
 /*
@@ -70,7 +65,7 @@ bool Setpoint::GetSetpointData(SetpointData* setpoint) {
       2. Calculated values from GPS navigation for autonomous flight
 */
 int Setpoint::SetpointManager() {
-  dsm2_timeout_ = 0;
+  uint32_t dsm2_timeout_counter = 0;
   while (is_running_.load()) {
     /**********************************************************
      *           If there is new dsm2 data read it in       *
@@ -81,13 +76,18 @@ int Setpoint::SetpointManager() {
       for (int i = 0; i < RC_MAX_DSM_CHANNELS; i++) {
         dsm2_data[i] = rc_dsm_ch_normalized(i + 1);
       }
-      dsm2_timeout_ = 0;
+      dsm2_timeout_counter = 0;
     } else {
       if (!is_debug_mode_) {
         // check to make sure too much time hasn't gone by since hearing the RC
-        if (RcErrHandler()) {
-          return 0;
+
+        dsm2_timeout_counter++;
+        if (dsm2_timeout_counter > 2 * SETPOINT_LOOP_FRQ) {  // If packet hasn't been received for 2 seconds
+          spdlog::critical("Lost Connection with Remote!! Shutting Down Immediately!");
+          rc_set_state(EXITING);
+          return -1;
         }
+        return 0;
       }
     }
 
@@ -158,15 +158,5 @@ int Setpoint::HandleRcData(std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data) {
 }
 
 void Setpoint::SetYawRef(float ref) { setpoint_data_.euler_ref[2] = ref; }
-
-int Setpoint::RcErrHandler() {
-  dsm2_timeout_++;
-  if (dsm2_timeout_ > 2 * SETPOINT_LOOP_FRQ) {  // If packet hasn't been received for 2 seconds
-    spdlog::critical("Lost Connection with Remote!! Shutting Down Immediately!");
-    rc_set_state(EXITING);
-    return -1;
-  }
-  return 0;
-}
 
 }  // namespace flyMS

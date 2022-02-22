@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   // Enable the signal handler so we can exit cleanly on SIGINT
   initSignalHandler();
 
-  bool is_debug_mode = true;
+  bool is_debug_mode = false;
   // Parse the command line arguments
   int in;
   while ((in = getopt(argc, argv, "dr:h")) != -1) {
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 
   // Wait for the signal before starting the flight program
   if (!is_debug_mode) {
-    if (wait_for_start_signal()) {
+    if (flyMS::wait_for_start_signal()) {
       return -1;
     }
   }
@@ -101,6 +101,8 @@ int main(int argc, char *argv[]) {
   if (fly.StartupRoutine()) {
     rc_set_state(EXITING);
     spdlog::error("Startup failed, exiting");
+    handle_error();
+    return -1;
   }
   while (rc_get_state() != EXITING) {
     std::this_thread::sleep_for(std::chrono::seconds(1));

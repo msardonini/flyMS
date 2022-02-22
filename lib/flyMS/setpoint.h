@@ -8,21 +8,11 @@
 
 #pragma once
 
-#include <math.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
 
-// Package includes
 #include "flyMS/position_controller.h"
 #include "rc/dsm.h"
 #include "yaml-cpp/yaml.h"
@@ -47,16 +37,14 @@ class Setpoint {
   /**
    * @brief      Gets the setpoint data.
    *
-   * @param      setpoint  The setpoint data
-   *
    * @return     The setpoint data.
    */
-  bool GetSetpointData(SetpointData* setpoint);
+  SetpointData GetSetpointData();
 
   /**
    * @brief Set the Yaw Setpoint value to a user defined offset
    *
-   * @param ref
+   * @param ref the reference value to set
    */
   void SetYawRef(float ref);
 
@@ -72,13 +60,12 @@ class Setpoint {
  private:
   int SetpointManager();
   int HandleRcData(std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data);
-  int RcErrHandler();
+  int RcErrHandler(uint32_t& dsm2_timeout_counter);
 
   std::atomic<bool> is_running_;  // Flag to indicate if the object is running vs shutting down
 
   std::atomic<bool> ready_to_send_;
   std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data_;
-  int dsm2_timeout_;
 
   // Variables to control multithreading
   std::thread setpoint_thread_;

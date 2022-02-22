@@ -1,5 +1,8 @@
-project(flyMS LANGUAGES CXX C)
+cmake_policy(SET CMP0048 NEW)
+project(flyMS LANGUAGES CXX C VERSION 0.1.0)
 cmake_minimum_required(VERSION 3.5)
+
+
 
 # # Get the architecture of the CPU building this
 EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
@@ -15,14 +18,11 @@ if(host64bit)
   message(STATUS "Cross compiling to ARM   ${CMAKE_TOOLCHAIN_FILE}")
 endif(host64bit)
 
-
-
-
 # Set c++ standard
-set (CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
 
 
-set(CMAKE_CXX_FLAGS "-pg")
+set(CMAKE_CXX_FLAGS "-Wall")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g")

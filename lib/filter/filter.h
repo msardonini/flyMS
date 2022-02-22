@@ -57,52 +57,68 @@ typedef struct digital_filter_t {
 
 } digital_filter_t;
 
-/*
---- March Filter ---
-march the filter forward in time one step with new input data
-returns new output which could also be accessed with filter.current_output
-*/
-float update_filter(digital_filter_t* filter, float new_val);
+/**
+ * @brief Apply the filter on a new data sample
+ *
+ * @param filter A pointer to a pre-generated filter object
+ * @param raw_val The new raw value to apply to the filter
+ * @return float The filtered output value
+ */
+float update_filter(digital_filter_t* filter, float raw_val);
 
-/*
---- Saturate Filter ---
-limit the output of filter to be between min&max
-returns 1 if saturation was hit
-returns 0 if output was within bounds
-*/
-float saturateFilter(float filter, float min, float max);
+/**
+ * @brief Simple Saturation filter
+ *
+ * @param value input value to filter
+ * @param min min value of saturation filter
+ * @param max max value of saturation filter
+ * @return float filtered value
+ */
+float saturateFilter(float value, float min, float max);
 
-/*
---- Zero Filter ---
-reset all input and output history to 0
-*/
+/**
+ * @brief Zero out all data in a filter
+ *
+ * @param filter A pointer to a pre-generated filter object
+ */
 int zeroFilter(digital_filter_t* filter);
 
-/*
---- PreFill Filter ---
-fill the past inputs with the curent input
-use before marchFilter when starting to avoid ugly step input
-*/
+/**
+ * @brief Fill the history of the filter with a value to prevent a harsh step function
+ *
+ * @param filter A pointer to a pre-generated filter object
+ * @param value value to fill the filter with
+ */
 int prefill_filter(digital_filter_t* filter, float value);
 
-/*
---- Initialize Filter ---
-Dynamically allocate memory for a filter of specified order
-and set transfer function constants.
-
-Note: A normalized transfer function should have a leading 1
-in the denominator but can be !=1 in this library
-*/
+/**
+ * @brief Dynamically allocate memory for a filter of specified order and set transfer function constants.
+          Note: A normalized transfer function should have a leading 1 in the denominator but can be !=1 in this library
+ *
+ * @param order The order of the filter
+ * @param num numerator coefficients, should be size (order + 1)
+ * @param den denominator coefficients, should be size (order + 1
+ * @return digital_filter_t*
+ */
 digital_filter_t* initialize_filter(uint8_t order, float num[], float den[]);
 
-// discrete-time implementation of a parallel PID controller with derivative filter
-// similar to Matlab pid command
-//
-// N is the pole location for derivative filter. Must be greater than 2*DT
-// smaller N gives faster filter decay
+/**
+ * @brief discrete-time implementation of a parallel PID controller with derivative filter similar to Matlab pid command
+ *
+ * @param kp Proportional coeff
+ * @param ki Integrator coeff
+ * @param kd Derivative coeff
+ * @param Tf the pole location for derivative filter. Must be greater than 2*DT smaller Tf gives faster filter decay
+ * @param dt The time difference between sample updates
+ * @return digital_filter_t* a digital filter
+ */
 digital_filter_t* generatePID(float kp, float ki, float kd, float Tf, float dt);
 
-// print order, numerator, and denominator constants
+/**
+ * @brief Print the contents of the digital filter
+ *
+ * @param filter The value of the filter to print
+ */
 void print_filter(digital_filter_t* filter);
 
 #endif

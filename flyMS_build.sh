@@ -30,7 +30,7 @@ function build_docker_image {
 }
 
 function build_flyMS {
-  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -C /opt/builder/build"
+  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build"
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
