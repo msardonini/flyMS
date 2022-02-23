@@ -21,15 +21,32 @@ constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
 constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
 constexpr float DEADZONE_THRESH = 0.05f;
 
-Setpoint::Setpoint(const YAML::Node& config_params) : is_running_(true), has_received_data_(false) {
-  is_debug_mode_ = config_params["debug_mode"].as<bool>();
-  flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
-
-  YAML::Node setpoint_params = config_params["setpoint"];
-  max_setpoints_stabilized_ = setpoint_params["max_setpoints_stabilized"].as<std::array<float, 3> >();
-  max_setpoints_acro_ = setpoint_params["max_setpoints_acro"].as<std::array<float, 3> >();
-  throttle_limits_ = setpoint_params["throttle_limits"].as<std::array<float, 2> >();
+Setpoint::Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
+                   std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits)
+    : is_running_(false),
+      has_received_data_(false),
+      is_debug_mode_(is_debug_mode),
+      flight_mode_(flight_mode),
+      max_setpoints_stabilized_(max_setpts_stabilized),
+      max_setpoints_acro_(max_setpts_acro),
+      throttle_limits_(throttle_limits) {
+  // Sanity checks
+  if (throttle_limits[1] <= throttle_limits[0]) {
+    throw std::invalid_argument("Invalid throttle parameters! First param is min, second is max");
+  }
+  if (flight_mode_ == FlightMode::STABILIZED) {
+    if (max_setpoints_stabilized_[0] >= M_PI / 2 || max_setpoints_stabilized_[1] >= M_PI / 2) {
+      throw std::invalid_argument("Invalid max_setpoints_stabilized, Roll,Pitch must be < Pi/2 ");
+    }
+  }
 }
+
+Setpoint::Setpoint(const YAML::Node& config_params)
+    : Setpoint(config_params["debug_mode"].as<bool>(),
+               static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>()),
+               config_params["max_setpoints_stabilized"].as<std::array<float, 3>>(),
+               config_params["max_setpoints_acro"].as<std::array<float, 3>>(),
+               config_params["throttle_limits"].as<std::array<float, 2>>()) {}
 
 Setpoint::~Setpoint() {
   rc_dsm_cleanup();

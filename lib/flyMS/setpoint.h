@@ -21,6 +21,10 @@
 
 namespace flyMS {
 
+/**
+ * @brief Data struct that holds the flight commands for the inner loop controller
+ *
+ */
 struct SetpointData {
   std::array<float, 3> euler_ref;     //< Reference (Desired) Position in Roll, Pitch, Yaw
   std::array<float, 2> yaw_rate_ref;  //< Reference Yaw Rate, current (ind 0) and previous (ind 1)
@@ -29,8 +33,31 @@ struct SetpointData {
   float kill_switch;                  //< Value of the kill switch channel
 };
 
+/**
+ * @brief Setpoint class. Communicates with the remote control (using robotics_cape rc_dsm interface) to receive
+ * commands. Commands are: throttle, roll, pitch, yaw, kill_switch, and Aux_switch. Switches have binary information
+ *
+ */
 class Setpoint {
  public:
+  /**
+   * @brief Construct a new Setpoint object
+   *
+   * @param is_debug_mode Flag indicating debug mode
+   * @param flight_mode  flight mode: stabilized or acro
+   * @param max_setpts_stabilized max setpoints for stabilized mode (in RPW rad, rad, rad/s)
+   * @param max_setpts_acro max setpoints for acro mode (in RPW rad/s, rad/s, rad/s)
+   * @param throttle_limits The min (index 0) and max (index 1) throttle values between 0-1
+   */
+  Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
+           std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits);
+
+  /**
+   * @brief Construct a new Setpoint object using a yaml node. The node must have all the parameters needed in the main
+   * constructor
+   *
+   * @param config_params The yaml node with config params
+   */
   Setpoint(const YAML::Node& config_params);
 
   // Default Destructor
@@ -77,20 +104,19 @@ class Setpoint {
 
  private:
   int SetpointManager();
-
-  std::atomic<bool> is_running_;         //< Flag to indicate if the object is running vs shutting down
-  std::atomic<bool> has_received_data_;  //< True if any dsm packet has been received
-
   std::thread setpoint_thread_;  //< Thread that reads dsm2 UART
   std::mutex setpoint_mutex_;    //< Mutex that protects setpoint_data_
   SetpointData setpoint_data_;   //< Data to be shared with the user when called
 
+  std::atomic<bool> is_running_;         //< Flag to indicate if the object is running vs shutting down
+  std::atomic<bool> has_received_data_;  //< True if any dsm packet has been received
+
   // All configurable parameters
   bool is_debug_mode_;                             //< is running in debug mode
+  FlightMode flight_mode_;                         //< The flight mode
   std::array<float, 3> max_setpoints_stabilized_;  //< Max orientation commands in [rad, rad, rad/s]
   std::array<float, 3> max_setpoints_acro_;        //< Max orientation commands in acro mode [rad/s, rad/s, rad/s]
   std::array<float, 2> throttle_limits_;           //< Min and max throttle limits
-  FlightMode flight_mode_;                         //< The flight mode
   // bool is_headless_mode_;  //< Not currently supported
 };
 
