@@ -28,6 +28,23 @@ debian soft rtprio 99
 sudo pip3 install pyyaml flask_restful
 ```
 
+6. Make sure the beaglebone's debian packages are up to date
+```
+sudo apt update
+sudo apt upgrade
+```
+
+7. Calibrate all Sensors
+
+```
+rc_calibrate_gyro
+rc_calibrate_escs
+rc_calibrate_accel
+rc_calibrate_mag
+```
+
+
+
 ## Build Environment
 The stack can be cross compiled (recommended) or compiled natively on the Bealgebone board. The cross compiling system
 is containerized, and the only dependency needed on the host is docker.

@@ -12,7 +12,7 @@
 
 namespace flyMS {
 
-MavlinkInterface::MavlinkInterface(const YAML::Node input_params) {
+MavlinkInterface::MavlinkInterface(const YAML::Node input_params) : is_running_(false) {
   YAML::Node mavlink_params = input_params["mavlink_interface"];
   serial_dev_file_ = mavlink_params["serial_device"].as<std::string>();
 }
@@ -60,6 +60,7 @@ int MavlinkInterface::Init() {
   serial_read_thread_ = std::thread(&MavlinkInterface::SerialReadThread, this);
 
   // Start the GPIO thread that watches for the image trigger pulses
+  is_running_.store(true);
   gpio_thread_ = std::thread(&MavlinkInterface::GpioThread, this);
   return 0;
 }

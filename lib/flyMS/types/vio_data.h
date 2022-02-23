@@ -1,5 +1,4 @@
-#ifndef SRC_FLYMS_INCLUDE_FLYMS_TYPES_VIO_H_
-#define SRC_FLYMS_INCLUDE_FLYMS_TYPES_VIO_H_
+#pragma once
 
 #include "Eigen/Dense"
 
@@ -9,5 +8,3 @@ struct VioData {
   Eigen::Vector3f velocity;
   Eigen::Quaternionf quat;
 };
-
-#endif  // SRC_FLYMS_INCLUDE_FLYMS_TYPES_VIO_H_

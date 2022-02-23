@@ -22,6 +22,8 @@ class MavlinkInterface {
 
   int Init();
 
+  operator bool() { return is_running_.load(); }
+
   int SendImuMessage(const StateData &imu_state);
   int SendStartCommand();
   int SendShutdownCommand();

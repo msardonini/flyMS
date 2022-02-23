@@ -19,27 +19,16 @@ namespace flyMS {
 
 constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
 constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
+constexpr float DEADZONE_THRESH = 0.05f;
 
-Setpoint::Setpoint(const YAML::Node& config_params) : is_running_(true), ready_to_send_(false) {
+Setpoint::Setpoint(const YAML::Node& config_params) : is_running_(true), has_received_data_(false) {
   is_debug_mode_ = config_params["debug_mode"].as<bool>();
-  flight_mode_ = config_params["flight_mode"].as<int>();
+  flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
 
   YAML::Node setpoint_params = config_params["setpoint"];
   max_setpoints_stabilized_ = setpoint_params["max_setpoints_stabilized"].as<std::array<float, 3> >();
   max_setpoints_acro_ = setpoint_params["max_setpoints_acro"].as<std::array<float, 3> >();
-  is_headless_mode_ = setpoint_params["headless_mode"].as<bool>();
   throttle_limits_ = setpoint_params["throttle_limits"].as<std::array<float, 2> >();
-
-  position_controller = std::make_unique<PositionController>(config_params);
-  int ret = rc_dsm_init();
-  if (ret < 0) {
-    throw std::invalid_argument("DSM failed to initialize");
-  }
-
-  // Zero out the container
-  memset(&setpoint_data_, 0x00, sizeof(setpoint_data_));
-
-  setpoint_thread_ = std::thread(&Setpoint::SetpointManager, this);
 }
 
 Setpoint::~Setpoint() {
@@ -50,110 +39,87 @@ Setpoint::~Setpoint() {
   }
 }
 
+void Setpoint::init() {
+  int ret = rc_dsm_init();
+  if (ret < 0) {
+    throw std::invalid_argument("DSM failed to initialize");
+  }
+
+  setpoint_thread_ = std::thread(&Setpoint::SetpointManager, this);
+}
+
+void Setpoint::wait_for_data_packet() {
+  while (!has_received_data_.load() && rc_get_state() != EXITING) {
+    std::this_thread::sleep_for(std::chrono::microseconds(SETPOINT_LOOP_SLEEP_TIME_US));
+  }
+}
+
 // Gets the data from the local thread. Returns zero if no new data is available
 SetpointData Setpoint::GetSetpointData() {
   std::lock_guard<std::mutex> lock(setpoint_mutex_);
   return setpoint_data_;
 }
 
-/*
-  setpoint_manager()
-    Handles the setpoint values for roll/pitch/yaw to be fed into the flight controller
-
-    2 Main sources of retreiving values
-      1. Direct from remote flyMSData
-      2. Calculated values from GPS navigation for autonomous flight
-*/
 int Setpoint::SetpointManager() {
   uint32_t dsm2_timeout_counter = 0;
   while (is_running_.load()) {
-    /**********************************************************
-     *           If there is new dsm2 data read it in       *
-     *      and make a local copy from the driver's data  *
-     **********************************************************/
-    std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data;
     if (rc_dsm_is_new_data()) {
-      for (int i = 0; i < RC_MAX_DSM_CHANNELS; i++) {
-        dsm2_data[i] = rc_dsm_ch_normalized(i + 1);
+      std::lock_guard<std::mutex> lock(setpoint_mutex_);
+
+      // Set roll/pitch reference value
+      // DSM2 Receiver is inherently positive to the left
+      if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
+        setpoint_data_.euler_ref[0] = -rc_dsm_ch_normalized(2) * max_setpoints_stabilized_[0];
+        setpoint_data_.euler_ref[1] = -rc_dsm_ch_normalized(3) * max_setpoints_stabilized_[1];
+      } else if (flight_mode_ == FlightMode::ACRO) {
+        setpoint_data_.euler_ref[0] = -rc_dsm_ch_normalized(2) * max_setpoints_acro_[0];
+        setpoint_data_.euler_ref[1] = rc_dsm_ch_normalized(3) * max_setpoints_acro_[1];
+      } else {
+        throw std::runtime_error("Error! Invalid flight mode");
       }
+
+      // Set Yaw, RC Controller acts on Yaw velocity, save a history for integration
+      // Apply the integration outside of current if statement, needs to run at 200Hz
+      setpoint_data_.yaw_rate_ref[1] = setpoint_data_.yaw_rate_ref[0];
+      setpoint_data_.yaw_rate_ref[0] = rc_dsm_ch_normalized(4) * max_setpoints_stabilized_[2];
+
+      // Apply a deadzone to keep integrator from wandering
+      if (std::abs(setpoint_data_.yaw_rate_ref[0]) < DEADZONE_THRESH) {
+        setpoint_data_.yaw_rate_ref[0] = 0;
+      }
+
+      // Kill Switch
+      setpoint_data_.kill_switch = rc_dsm_ch_normalized(5);
+
+      // Auxillary Switch
+      setpoint_data_.Aux[1] = setpoint_data_.Aux[0];
+      setpoint_data_.Aux[0] = rc_dsm_ch_normalized(6);
+
+      // Set the throttle
+      setpoint_data_.throttle =
+          (rc_dsm_ch_normalized(1) + 1.0) / 2.0 * (throttle_limits_[1] - throttle_limits_[0]) + throttle_limits_[0];
+
+      // Finally Update the integrator on the yaw reference value
+      setpoint_data_.euler_ref[2] =
+          setpoint_data_.euler_ref[2] +
+          (setpoint_data_.yaw_rate_ref[0] + setpoint_data_.yaw_rate_ref[1]) * 1 / (2 * SETPOINT_LOOP_FRQ);
+
       dsm2_timeout_counter = 0;
+      if (!has_received_data_.load()) {
+        has_received_data_.store(true);
+      }
     } else {
       if (!is_debug_mode_) {
         // check to make sure too much time hasn't gone by since hearing the RC
-
         dsm2_timeout_counter++;
         if (dsm2_timeout_counter > 2 * SETPOINT_LOOP_FRQ) {  // If packet hasn't been received for 2 seconds
           spdlog::critical("Lost Connection with Remote!! Shutting Down Immediately!");
           rc_set_state(EXITING);
-          return -1;
         }
-        return 0;
       }
     }
-
-    setpoint_mutex_.lock();
-    HandleRcData(dsm2_data);
-    setpoint_mutex_.unlock();
     std::this_thread::sleep_for(std::chrono::microseconds(SETPOINT_LOOP_SLEEP_TIME_US));
   }
-  return 0;
-}
-
-int Setpoint::HandleRcData(std::array<float, RC_MAX_DSM_CHANNELS> dsm2_data) {
-  /**********************************************************
-   *           Read the RC Controller for Commands           *
-   **********************************************************/
-  // Set roll/pitch reference value
-  // DSM2 Receiver is inherently positive to the left
-  if (flight_mode_ == 1) {  // Stabilized Flight Mode
-    setpoint_data_.euler_ref[0] = -dsm2_data[1] * max_setpoints_stabilized_[0];
-    setpoint_data_.euler_ref[1] = dsm2_data[2] * max_setpoints_stabilized_[1];
-  } else if (flight_mode_ == 2) {
-    setpoint_data_.euler_ref[0] = -dsm2_data[1] * max_setpoints_acro_[0];
-    setpoint_data_.euler_ref[1] = dsm2_data[2] * max_setpoints_acro_[1];
-  }
-  // DSM2 Receiver is inherently positive upwards
-
-  // Set Yaw, RC Controller acts on Yaw velocity, save a history for integration
-  // Apply the integration outside of current if statement, needs to run at 200Hz
-  setpoint_data_.yaw_rate_ref[1] = setpoint_data_.yaw_rate_ref[0];
-  setpoint_data_.yaw_rate_ref[0] = dsm2_data[3] * max_setpoints_stabilized_[2];
-
-  // If Specified by the config file, convert from Drone Coordinate System to User Coordinate System
-  if (is_headless_mode_) {
-    // TODO: Give this thread access to state information so it can fly in headless mode
-
-    // float P_R_MAG=pow(pow(setpoint_data_.euler_ref[0],2)+pow(setpoint_data_.euler_ref[1],2),0.5);
-    // float Theta_Ref=atan2f(setpoint_data_.euler_ref[0],setpoint_data_.euler_ref[1]);
-
-    // setpoint_data_.euler_ref[1] =P_R_MAG*cos(Theta_Ref+state.euler[2]-setpoint_data_.yaw_ref_offset);
-    // setpoint_data_.euler_ref[0]=P_R_MAG*sin(Theta_Ref+state.euler[2]-setpoint_data_.yaw_ref_offset);
-  }
-
-  // Apply a deadzone to keep integrator from wandering
-  if (fabs(setpoint_data_.yaw_rate_ref[0]) < 0.05) {
-    setpoint_data_.yaw_rate_ref[0] = 0;
-  }
-
-  // Kill Switch
-  setpoint_data_.kill_switch[1] = setpoint_data_.kill_switch[0];
-  setpoint_data_.kill_switch[0] = dsm2_data[4];
-
-  // Auxillary Switch
-  setpoint_data_.Aux[1] = setpoint_data_.Aux[0];
-  setpoint_data_.Aux[0] = dsm2_data[5];
-
-  // Set the throttle
-  setpoint_data_.throttle =
-      (dsm2_data[0] + 1.0) / 2.0 * (throttle_limits_[1] - throttle_limits_[0]) + throttle_limits_[0];
-
-  // Finally Update the integrator on the yaw reference value
-  setpoint_data_.euler_ref[2] =
-      setpoint_data_.euler_ref[2] +
-      (setpoint_data_.yaw_rate_ref[0] + setpoint_data_.yaw_rate_ref[1]) * 1 / (2 * SETPOINT_LOOP_FRQ);
-
-  ready_to_send_.store(true);
-
   return 0;
 }
 

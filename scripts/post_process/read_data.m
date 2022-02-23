@@ -35,10 +35,10 @@ wing2=nohup(:,15);
 wing3=nohup(:,16);
 wing4=nohup(:,17);
 
-throttle=nohup(:,18);
-upitch=nohup(:,19);
-uroll=nohup(:,20);
-uyaw=nohup(:,21);
+upitch=nohup(:,18);
+uroll=nohup(:,19);
+uyaw=nohup(:,20);
+throttle=nohup(:,21);
 
 pitch_ref=nohup(:,22);
 roll_ref=nohup(:,23);

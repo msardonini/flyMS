@@ -22,6 +22,7 @@
 #include "flyMS/pru_client.h"
 #include "flyMS/setpoint.h"
 #include "flyMS/types/flight_filters.h"
+#include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -93,38 +94,22 @@ class FlightCore {
   // and reset the integrators in the PID controllers
   int integrator_reset_ = 0;
 
-  // Reference to Imu singleton object and Data struct from the imu manager
-  Imu &imu_module_;
-
-  // Class to handle and write to the log file
-  ULog ulog_;
-
-  // Classes for all the functions of the program
-  pruClient pru_client_;
-
-  // Object and Data struct from the setpoint manager
-  std::unique_ptr<Setpoint> setpoint_module_;
-
-  // Object and Data struct from the gps manager
-  gps gps_module_;
-  GPS_data_t gps_;
-
-  // Object to handle the I/O on the serial port
-  std::unique_ptr<MavlinkInterface> mavlink_interface_;
-
-  // Containers for controller's output
-  std::array<float, 4> u_euler_;
-  std::array<float, 4> u_;
+  Imu &imu_module_;                         //< Reference to Imu singleton object and Data struct from the imu manager
+  ULog ulog_;                               //< Class to handle and write to the log file
+  pruClient pru_client_;                    //< Object that communicates with the pru_handler process
+  Setpoint setpoint_module_;                //< Object and Data struct from the setpoint manager
+  MavlinkInterface mavlink_interface_;      //< Object to handle the I/O on the serial port
+  PositionController position_controller_;  //< Controller for position when flying using flySetero
+  gps gps_module_;                          //< Data struct from the gps manager
+  GPS_data_t gps_;                          //< GPS Manager
+  std::unique_ptr<FlightFilters> flight_filters_;  //< The digital filters used in filtering state data
 
   // Configurable parameters
-  int flight_mode_;
-  std::array<float, 3> max_control_effort_;
-  bool is_debug_mode_;
-  std::string log_filepath_;
-
-  std::unique_ptr<FlightFilters> flight_filters_;
-
-  YAML::Node config_params_;
+  bool is_debug_mode_;                       //< Is running in debug mode (no output to Motors)
+  FlightMode flight_mode_;                   //< The current flight mode
+  std::array<float, 3> max_control_effort_;  //< Maximum values allowed to to exert in each euler angle DoF
+  std::string log_filepath_;                 //< The filepath to the logging directory
+  YAML::Node config_params_;                 //< A copy of the yaml configuration
 };
 
 }  // namespace flyMS

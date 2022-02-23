@@ -2,6 +2,9 @@
 
 # TODO: clean up other scripts in this directory
 
+BUILD_DEBUG_MODE=0
+
+
 function print_usage {
   echo "flyMS_build.sh"
   echo "  Builds the flyMS flight program and dependencies on either a "
@@ -10,6 +13,7 @@ function print_usage {
   echo "  ./flyMS_build.sh [OPTIONS] "
   echo "    OPTIONS:"
   echo "      -c                      Cleans the build directory before making again"
+  echo "      -d                      Builds with debugging symbols on"
   echo "      --address {address}     Specify the IP address of the beaglebone to"
   echo "                              send outputs to. Required for cross compiling"
   echo "      --config {config_file}  Path to a config file to use for flight. This "
@@ -30,7 +34,13 @@ function build_docker_image {
 }
 
 function build_flyMS {
-  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build"
+  if [ $BUILD_DEBUG_MODE -ne 0 ]; then
+    DEBUG_COMMAND="-D CMAKE_BUILD_TYPE=Debug "
+  else
+    DEBUG_COMMAND="-D CMAKE_BUILD_TYPE=Release "
+  fi
+
+  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake $DEBUG_COMMAND -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build"
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
@@ -59,7 +69,7 @@ BUILD_DOCKER_IMAGE=0
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
-options=$(getopt -o cbh --long address: --long config: -- "$@")
+options=$(getopt -o cbhd --long address: --long config: -- "$@")
 [ $? -eq 0 ] || {
   echo "Incorrect options provided"
   exit 1
@@ -73,6 +83,9 @@ while true; do
     ;;
   -b)
     BUILD_DOCKER_IMAGE=1
+    ;;
+  -d)
+    BUILD_DEBUG_MODE=1
     ;;
   -h)
     # prints the help menu and exit
