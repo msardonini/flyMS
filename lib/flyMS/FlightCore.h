@@ -15,13 +15,13 @@
 #include <thread>
 #include <vector>
 
+#include "flyMS/DigitalFilter.hpp"
 #include "flyMS/gps.h"
 #include "flyMS/imu/Imu.h"
 #include "flyMS/mavlink_interface.h"
 #include "flyMS/position_generator.h"
 #include "flyMS/pru_client.h"
 #include "flyMS/setpoint.h"
-#include "flyMS/types/flight_filters.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
@@ -58,6 +58,12 @@ class FlightCore {
   int StartupRoutine();
 
  private:
+  /**
+   * @brief Zeros the data stored in the PID controllers, helps reset the integrator
+   *
+   */
+  void zero_pids();
+
   /**
    * @brief Checks the output signals before sending commands to motors. If any of the signals are too high (>1), all
    * channels are reduced evenly
@@ -102,7 +108,15 @@ class FlightCore {
   PositionController position_controller_;  //< Controller for position when flying using flySetero
   gps gps_module_;                          //< Data struct from the gps manager
   GPS_data_t gps_;                          //< GPS Manager
-  std::unique_ptr<FlightFilters> flight_filters_;  //< The digital filters used in filtering state data
+
+  DigitalFilter roll_inner_PID_;
+  DigitalFilter roll_outer_PID_;
+  DigitalFilter pitch_inner_PID_;
+  DigitalFilter pitch_outer_PID_;
+  DigitalFilter yaw_PID_;
+  DigitalFilter gyro_lpf_pitch_;
+  DigitalFilter gyro_lpf_roll_;
+  DigitalFilter gyro_lpf_yaw_;
 
   // Configurable parameters
   bool is_debug_mode_;                       //< Is running in debug mode (no output to Motors)
@@ -110,6 +124,8 @@ class FlightCore {
   std::array<float, 3> max_control_effort_;  //< Maximum values allowed to to exert in each euler angle DoF
   std::string log_filepath_;                 //< The filepath to the logging directory
   YAML::Node config_params_;                 //< A copy of the yaml configuration
+
+  DigitalFilter *test_filter;
 };
 
 }  // namespace flyMS

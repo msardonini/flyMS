@@ -17,9 +17,9 @@
 
 namespace flyMS {
 
-constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
-constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
-constexpr float DEADZONE_THRESH = 0.05f;
+static constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
+static constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
+static constexpr float DEADZONE_THRESH = 0.05f;
 
 Setpoint::Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
                    std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits)
@@ -44,9 +44,9 @@ Setpoint::Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float,
 Setpoint::Setpoint(const YAML::Node& config_params)
     : Setpoint(config_params["debug_mode"].as<bool>(),
                static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>()),
-               config_params["max_setpoints_stabilized"].as<std::array<float, 3>>(),
-               config_params["max_setpoints_acro"].as<std::array<float, 3>>(),
-               config_params["throttle_limits"].as<std::array<float, 2>>()) {}
+               config_params["setpoint"]["max_setpoints_stabilized"].as<std::array<float, 3>>(),
+               config_params["setpoint"]["max_setpoints_acro"].as<std::array<float, 3>>(),
+               config_params["setpoint"]["throttle_limits"].as<std::array<float, 2>>()) {}
 
 Setpoint::~Setpoint() {
   rc_dsm_cleanup();
@@ -77,7 +77,7 @@ SetpointData Setpoint::GetSetpointData() {
   return setpoint_data_;
 }
 
-int Setpoint::SetpointManager() {
+void Setpoint::SetpointManager() {
   uint32_t dsm2_timeout_counter = 0;
   while (is_running_.load()) {
     if (rc_dsm_is_new_data()) {
@@ -137,7 +137,6 @@ int Setpoint::SetpointManager() {
     }
     std::this_thread::sleep_for(std::chrono::microseconds(SETPOINT_LOOP_SLEEP_TIME_US));
   }
-  return 0;
 }
 
 void Setpoint::SetYawRef(float ref) { setpoint_data_.euler_ref[2] = ref; }

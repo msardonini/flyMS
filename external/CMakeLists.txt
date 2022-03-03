@@ -2,6 +2,7 @@
 add_subdirectory(yaml-cpp)
 add_subdirectory(spdlog)
 add_subdirectory(eigen)
+add_subdirectory(googletest)
 
 cmake_policy(SET CMP0079 NEW)
 add_subdirectory(librobotcontrol)

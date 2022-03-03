@@ -1,13 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(flyMS VERSION 1.0.0)
-
-
 add_definitions(-DDEBUG)
 
 
 #Build flyMS
 add_library(flyMS STATIC
+  DigitalFilter.cc
   FlightCore.cc
   config_requestor.cc
   gps.cc
@@ -25,7 +23,6 @@ target_link_libraries(flyMS
     spdlog
     robotics_cape
     Eigen3::Eigen
-    filter
     yaml-cpp
     HTTPRequest
 )
@@ -43,3 +40,6 @@ target_compile_options(flyMS
 
 install(TARGETS flyMS
   DESTINATION /usr/bin/)
+
+
+add_subdirectory(tests)

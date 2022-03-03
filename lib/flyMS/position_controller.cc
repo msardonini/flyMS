@@ -1,5 +1,6 @@
 #include "flyMS/position_controller.h"
 
+#include <algorithm>
 #include <iostream>
 
 #include "flyMS/imu/Imu.h"
@@ -8,20 +9,25 @@ namespace flyMS {
 
 PositionController::PositionController(const YAML::Node &config_params) {
   YAML::Node position_controller = config_params["position_controller"];
-  pid_coeffs_x_[0] = position_controller["pid_coeffs_x_outer"].as<std::array<float, 3> >();
-  pid_coeffs_x_[1] = position_controller["pid_coeffs_x_inner"].as<std::array<float, 3> >();
-  pid_coeffs_y_[0] = position_controller["pid_coeffs_y_outer"].as<std::array<float, 3> >();
-  pid_coeffs_y_[1] = position_controller["pid_coeffs_y_inner"].as<std::array<float, 3> >();
-  pid_coeffs_z_[0] = position_controller["pid_coeffs_z_outer"].as<std::array<float, 3> >();
-  pid_coeffs_z_[1] = position_controller["pid_coeffs_z_inner"].as<std::array<float, 3> >();
+  std::array<std::array<double, 3>, 2> pid_coeffs_x;
+  std::array<std::array<double, 3>, 2> pid_coeffs_y;
+  std::array<std::array<double, 3>, 2> pid_coeffs_z;
+
+  pid_coeffs_x[0] = position_controller["pid_coeffs_x_outer"].as<std::array<double, 3> >();
+  pid_coeffs_x[1] = position_controller["pid_coeffs_x_inner"].as<std::array<double, 3> >();
+  pid_coeffs_y[0] = position_controller["pid_coeffs_y_outer"].as<std::array<double, 3> >();
+  pid_coeffs_y[1] = position_controller["pid_coeffs_y_inner"].as<std::array<double, 3> >();
+  pid_coeffs_z[0] = position_controller["pid_coeffs_z_outer"].as<std::array<double, 3> >();
+  pid_coeffs_z[1] = position_controller["pid_coeffs_z_inner"].as<std::array<double, 3> >();
 
   // Roll, pitch, and yaw output saturdation limits
   RPY_saturation_limits_ = position_controller["RPY_saturation_limits"].as<std::array<float, 3> >();
 
   for (int i = 0; i < 2; i++) {
-    pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, LOOP_DELTA_T);
-    pid_[1][i] = generatePID(pid_coeffs_y_[i][0], pid_coeffs_y_[i][1], pid_coeffs_y_[i][2], 0.15, LOOP_DELTA_T);
-    pid_[2][i] = generatePID(pid_coeffs_z_[i][0], pid_coeffs_z_[i][1], pid_coeffs_z_[i][2], 0.15, LOOP_DELTA_T);
+    // pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, LOOP_DELTA_T);
+    pid_[0][i] = generate_pid(pid_coeffs_x[i], LOOP_DELTA_T, 0.15);
+    pid_[0][i] = generate_pid(pid_coeffs_y[i], LOOP_DELTA_T, 0.15);
+    pid_[0][i] = generate_pid(pid_coeffs_z[i], LOOP_DELTA_T, 0.15);
   }
 
   // Conversion matrix to map roll, pitch, throttle commands from PID output in XYZ frame
@@ -33,20 +39,14 @@ PositionController::PositionController(const YAML::Node &config_params) {
   setpoint_orientation_ = Eigen::Vector3f::Zero();
 }
 
-PositionController::~PositionController() {
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 2; j++) {
-      free(pid_[i][j]);
-    }
-  }
-}
+PositionController::~PositionController() {}
 
 int PositionController::ReceiveVio(const VioData &vio) {
   Eigen::Vector3f setpoint_orientation_xyz;
   // Calculate the PIDs for the outer and inner loops on XYZ axis
   for (int i = 0; i < 3; i++) {
-    setpoint_velocity_[i] = update_filter(pid_[i][0], setpoint_position_[i] - vio.position[i]);
-    setpoint_orientation_xyz(i) = update_filter(pid_[i][1], setpoint_velocity_(i) - vio.velocity(i));
+    setpoint_velocity_[i] = pid_[i][0].update_filter(setpoint_position_[i] - vio.position[i]);
+    setpoint_orientation_xyz(i) = pid_[i][1].update_filter(setpoint_velocity_(i) - vio.velocity(i));
   }
 
   // lock the mutex to protect our output variable
@@ -61,7 +61,7 @@ int PositionController::ReceiveVio(const VioData &vio) {
   // Apply a saturation filter to keep the behavior in check
   for (int i = 0; i < 3; i++) {
     setpoint_orientation_(i) =
-        saturateFilter(setpoint_orientation_(i), -RPY_saturation_limits_[0], RPY_saturation_limits_[0]);
+        std::clamp(setpoint_orientation_(i), -RPY_saturation_limits_[0], RPY_saturation_limits_[0]);
   }
 
   // Back out the yaw euler angle which is needed for reference
@@ -90,7 +90,7 @@ void PositionController::ResetController() {
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 2; j++) {
-      zeroFilter(pid_[i][j]);
+      pid_[i][j].zero_values();
     }
   }
 }

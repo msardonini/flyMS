@@ -8,9 +8,9 @@
 
 #include "flyMS/FlightCore.h"
 
-#include <pthread.h>
 #include <sys/stat.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
@@ -22,11 +22,19 @@
 
 namespace flyMS {
 
+void FlightCore::zero_pids() {
+  roll_outer_PID_.zero_values();
+  roll_inner_PID_.zero_values();
+  pitch_outer_PID_.zero_values();
+  pitch_inner_PID_.zero_values();
+  yaw_PID_.zero_values();
+}
+
 FlightCore::FlightCore(const YAML::Node &config_params)
     : imu_module_(Imu::getInstance()),
       ulog_(),
       setpoint_module_(config_params),
-      mavlink_interface_(config_params["mavlink_interface"]),
+      mavlink_interface_(config_params),
       position_controller_(config_params),
       gps_module_(config_params),
       config_params_(config_params) {
@@ -116,40 +124,40 @@ int FlightCore::flight_core(StateData &imu_data_body) {
    ************************************************************************/
   float droll_setpoint;
   if (flight_mode_ == FlightMode::STABILIZED) {
-    droll_setpoint = update_filter(flight_filters_->roll_outer_PID, setpoint.euler_ref[0] - imu_data_body.euler[0]);
+    droll_setpoint = roll_outer_PID_.update_filter(setpoint.euler_ref[0] - imu_data_body.euler[0]);
   } else if (flight_mode_ == FlightMode::ACRO) {  // Acro mode
     droll_setpoint = setpoint.euler_ref[0];
   } else {
     throw std::runtime_error("[FlightCore] Error! Invalid flight mode. Shutting down now");
   }
 
-  imu_data_body.eulerRate[0] = update_filter(flight_filters_->gyro_lpf[0], imu_data_body.eulerRate[0]);
-  u_euler[0] = update_filter(flight_filters_->roll_inner_PID, droll_setpoint - imu_data_body.eulerRate[0]);
-  u_euler[0] = saturateFilter(u_euler[0], -max_control_effort_[0], max_control_effort_[0]);
+  imu_data_body.eulerRate[0] = gyro_lpf_roll_.update_filter(imu_data_body.eulerRate[0]);
+  u_euler[0] = roll_inner_PID_.update_filter(droll_setpoint - imu_data_body.eulerRate[0]);
+  u_euler[0] = std::clamp(u_euler[0], -max_control_effort_[0], max_control_effort_[0]);
 
   /************************************************************************
    *                         Pitch Controller                              *
    ************************************************************************/
   float dpitch_setpoint;
   if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
-    dpitch_setpoint = update_filter(flight_filters_->pitch_outer_PID, setpoint.euler_ref[1] - imu_data_body.euler[1]);
+    dpitch_setpoint = pitch_outer_PID_.update_filter(setpoint.euler_ref[1] - imu_data_body.euler[1]);
   } else if (flight_mode_ == FlightMode::ACRO) {  // Acro mode
     dpitch_setpoint = setpoint.euler_ref[1];
   } else {
     throw std::runtime_error("[FlightCore] Error! Invalid flight mode. Shutting down now");
   }
 
-  imu_data_body.eulerRate[1] = update_filter(flight_filters_->gyro_lpf[1], imu_data_body.eulerRate[1]);
-  u_euler[1] = update_filter(flight_filters_->pitch_inner_PID, dpitch_setpoint - imu_data_body.eulerRate[1]);
-  u_euler[1] = saturateFilter(u_euler[1], -max_control_effort_[1], max_control_effort_[1]);
+  imu_data_body.eulerRate[1] = gyro_lpf_pitch_.update_filter(imu_data_body.eulerRate[1]);
+  u_euler[1] = pitch_inner_PID_.update_filter(dpitch_setpoint - imu_data_body.eulerRate[1]);
+  u_euler[1] = std::clamp(u_euler[1], -max_control_effort_[1], max_control_effort_[1]);
 
   /************************************************************************
    *                          Yaw Controller                              *
    ************************************************************************/
-  imu_data_body.eulerRate[2] = update_filter(flight_filters_->gyro_lpf[2], imu_data_body.eulerRate[2]);
-  u_euler[2] = update_filter(flight_filters_->yaw_PID, setpoint.euler_ref[2] - imu_data_body.euler[2]);
+  imu_data_body.eulerRate[2] = gyro_lpf_yaw_.update_filter(imu_data_body.eulerRate[2]);
+  u_euler[2] = yaw_PID_.update_filter(setpoint.euler_ref[2] - imu_data_body.euler[2]);
   // Apply a saturation filter
-  u_euler[2] = saturateFilter(u_euler[2], -max_control_effort_[2], max_control_effort_[2]);
+  u_euler[2] = std::clamp(u_euler[2], -max_control_effort_[2], max_control_effort_[2]);
 
   /************************************************************************
    *                  Reset the Integrators if Landed                      *
@@ -164,7 +172,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   if (integrator_reset_ > 2 / LOOP_DELTA_T) {
     setpoint.euler_ref[2] = imu_data_body.euler[2];
     setpoint_module_.SetYawRef(imu_data_body.euler[2]);
-    flight_filters_->ZeroPIDs();
+    zero_pids();
   }
 
   /************************************************************************
@@ -229,10 +237,12 @@ int FlightCore::ConsolePrint(const StateData &imu_data_body, const SetpointData 
   // u[1], u[2], u[3]); spdlog::info("Aux {:2.1f} ", setpoint.Aux[0]);
   //  spdlog::info("function: {}",rc_get_dsm_ch_normalized(6));
   //  spdlog::info("num wraps {} ",control->num_wraps);
-  spdlog::info(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} KS {:2.2f} ", setpoint.throttle,
-               setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2], setpoint.kill_switch);
+  // spdlog::info(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} KS {:2.2f} ", setpoint.throttle,
+  //              setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2], setpoint.kill_switch);
   // spdlog::info("Roll {:1.2f}, Pitch {:1.2f}, Yaw {:2.3f}", imu_data_body.euler[0], imu_data_body.euler[1],
   //              imu_data_body.euler[2]);
+  spdlog::info("droll {:1.2f}, dpitch {:1.2f}, dyaw {:2.3f}", imu_data_body.eulerRate[0], imu_data_body.eulerRate[1],
+               imu_data_body.eulerRate[2]);
   //  spdlog::info(" Mag X {:4.2f}",control->mag[0]);
   //  spdlog::info(" Mag Y {:4.2f}",control->mag[1]);
   //  spdlog::info(" Mag Z {:4.2f}",control->mag[2]);
@@ -316,6 +326,7 @@ int FlightCore::StartupRoutine() {
   // Create a file for logging and initialize our file logger
   init_logging(log_filepath_);
 
+  std::cout << "hi\n";
   if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
     mavlink_interface_.Init();
   }
@@ -335,15 +346,23 @@ int FlightCore::StartupRoutine() {
     rc_set_state(EXITING);
   }
 
-  // Initialize the PID controllers and LP filters
+  // Generate the PID controllers and low-pass filters
   YAML::Node controller = config_params_["controller"];
   YAML::Node filters = config_params_["filters"];
-  flight_filters_ = std::make_unique<FlightFilters>(
-      controller["roll_PID_inner"].as<std::array<float, 3>>(), controller["roll_PID_outer"].as<std::array<float, 3>>(),
-      controller["pitch_PID_inner"].as<std::array<float, 3>>(),
-      controller["pitch_PID_outer"].as<std::array<float, 3>>(), controller["yaw_PID"].as<std::array<float, 3>>(),
-      filters["imu_lpf_num"].as<std::vector<float>>(), filters["imu_lpf_den"].as<std::vector<float>>(), LOOP_DELTA_T,
-      controller["pid_LPF_const_sec"].as<float>());
+  double pid_lpf_const = controller["pid_LPF_const_sec"].as<double>();
+  roll_inner_PID_ = generate_pid(controller["roll_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  roll_outer_PID_ = generate_pid(controller["roll_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  pitch_outer_PID_ =
+      generate_pid(controller["pitch_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  pitch_inner_PID_ =
+      generate_pid(controller["pitch_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  yaw_PID_ = generate_pid(controller["yaw_PID"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+
+  auto lpf_num = filters["imu_lpf_num"].as<std::vector<double>>();
+  auto lpf_den = filters["imu_lpf_den"].as<std::vector<double>>();
+  gyro_lpf_roll_ = DigitalFilter(lpf_num, lpf_den);
+  gyro_lpf_pitch_ = DigitalFilter(lpf_num, lpf_den);
+  gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
 
   // Initialize the client to connect to the PRU handler
   pru_client_.startPruClient();

@@ -103,7 +103,11 @@ class Setpoint {
   float GetMinThrottle() const { return throttle_limits_[0]; }
 
  private:
-  int SetpointManager();
+  /**
+   * @brief Loop which reads dsm data and makes it available to the user via GetSetpointData()
+   *
+   */
+  void SetpointManager();
   std::thread setpoint_thread_;  //< Thread that reads dsm2 UART
   std::mutex setpoint_mutex_;    //< Mutex that protects setpoint_data_
   SetpointData setpoint_data_;   //< Data to be shared with the user when called
