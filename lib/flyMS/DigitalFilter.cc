@@ -49,8 +49,8 @@ void DigitalFilter::init(const std::vector<double> &numerator, const std::vector
 }
 
 void DigitalFilter::zero_values() {
-  std::for_each(signal_hist_.begin(), signal_hist_.end(), [](auto &val) { return 0.; });
-  std::for_each(filter_hist_.begin(), filter_hist_.end(), [](auto &val) { return 0.; });
+  std::for_each(signal_hist_.begin(), signal_hist_.end(), [](auto &val) { val = 0.; });
+  std::for_each(filter_hist_.begin(), filter_hist_.end(), [](auto &val) { val = 0.; });
 }
 
 double DigitalFilter::update_filter(double val) {
