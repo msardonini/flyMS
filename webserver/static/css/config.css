@@ -1,0 +1,172 @@
+:root {
+  --primary-color: #007AF3;
+}
+
+body {
+  background: #F2F2F2;
+  margin: 0;
+  font-family: 'Poppins';
+}
+
+section {
+  padding: 2em 1em;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar {
+  background: #a1b1be;
+  padding: 1em;
+}
+
+.navbar .logo {
+  text-decoration: none;
+  font-weight: bold;
+  color: black;
+  font-size: 1.8em;
+}
+
+.navbar .logo span {
+  color: var(--primary-color);
+}
+
+.navbar nav {
+  display: none;
+}
+
+.navbar .container {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  place-content: space-between;
+}
+
+.navbar .mobile-menu {
+  cursor: pointer;
+}
+
+nav.menu-btn {
+  display: block;
+}
+
+nav {
+  position: fixed;
+  z-index: 999;
+  width: 66%;
+  right: 0;
+  top: 0;
+  background: #20272E;
+  height: 100vh;
+  padding: 1em;
+}
+
+nav ul.primary-nav {
+  margin-top: 5em;
+}
+
+nav li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: .5em;
+  font-size: 1.3em;
+  text-align: right;
+}
+
+nav li a:hover {
+  font-weight: bold;
+}
+
+.homepage_hero h1 span {
+  color: var(--primary-color);
+}
+
+label {
+  display: inline-block;
+  line-height: 1.5em;
+  padding-right: .5em;
+  width: 6.5em;
+  text-align: right;
+  font-weight: bold;
+}
+
+.pid_entry {
+  vertical-align: middle;
+  margin-bottom: .25em;
+}
+
+input {
+  font-size: large;
+  border-radius: .3em;
+  border: 1px solid gray;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+.buttons {
+  margin-top: 1em;
+}
+
+input[type="button"], input[type="submit"] {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  font-size: 1.3em;
+  border: none;
+  margin-bottom: 1em;
+  border-radius: 5em;
+  display: inline-block;
+  padding: .2em 1em;
+  width: unset;
+  cursor: pointer;
+}
+
+@media only screen and (min-width: 768px) {
+  .mobile-menu, .mobile-menu-exit {
+    display: none;
+  }
+  .navbar .container {
+    display: -ms-grid;
+    display: grid;
+    -ms-grid-columns: 180px auto;
+        grid-template-columns: 180px auto;
+    -webkit-box-pack: unset;
+        -ms-flex-pack: unset;
+            justify-content: unset;
+  }
+  .navbar nav {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+    background: none;
+    position: unset;
+    height: auto;
+    width: 100%;
+    padding-top: .4em;
+    padding-bottom: 0em;
+  }
+  .navbar nav ul {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+  }
+  .navbar nav a {
+    color: black;
+    font-size: 1em;
+    padding: .1em 1em;
+  }
+  .navbar nav ul.primary-nav {
+    margin: 0;
+  }
+  .navbar nav li.current a {
+    font-weight: bold;
+  }
+}
+/*# sourceMappingURL=config.css.map */

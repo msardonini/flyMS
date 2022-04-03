@@ -16,11 +16,10 @@ YAML::Node get_config(const std::string &uri) {
     // send a get request
     const auto response = request.send("GET", "", std::vector<std::string>{}, std::chrono::seconds(3));
     auto response_str = std::string{response.body.begin(), response.body.end()};
-    auto node = YAML::Load(response_str)["data"];
-    std::cout << node << std::endl;
+    auto node = YAML::Load(response_str);
     return node;
   } catch (const std::exception &e) {
-    std::cerr << "Request failed, error: " << e.what() << '\n';
+    std::cerr << "Request failed, error: " << e.what() << std::endl;
     return YAML::Node();
   }
 }

@@ -1,0 +1,74 @@
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/config.css" />
+  <link rel="stylesheet" href="css/calibration.css" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="navbar">
+    <div class="container">
+      <a class="logo" href="/">fly<span>MS</span></a>
+
+      <img
+        id="mobile-cta"
+        class="mobile-menu"
+        src="images/menu.svg"
+        alt="Open Navigation"
+      />
+
+      <nav>
+        <img
+          id="mobile-exit"
+          class="mobile-menu-exit"
+          src="images/exit.svg"
+          alt="Close Navigation"
+        />
+
+        <ul class="primary-nav">
+          <li class="current"><a href="/">Home</a></li>
+          <li><a href="config_controller.html">Configure Controller</a></li>
+          <li><a href="config_setpoint.html">Configure Setpoint</a></li>
+          <li><a href="calibration.html">Calibration</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <div class="hero-section">
+
+    <h2>Select Calibration Type:</h2>
+    <form id="form_calibration">
+      <input type="radio" id="gyroscope" name="calibration_routines" value="gyroscope">
+      <label for="gyroscope">gyroscope</label><br>
+      <input type="radio" id="accelerometer" name="calibration_routines" value="accelerometer">
+      <label for="accelerometer">accelerometer</label><br>
+      <input type="radio" id="magnetometer" name="calibration_routines" value="magnetometer">
+      <label for="magnetometer">magnetometer</label><br>
+      <input type="radio" id="ESCs" name="calibration_routines" value="ESCs">
+      <label for="ESCs">ESCs</label><br>
+      <input type="radio" id="DSM" name="calibration_routines" value="DSM">
+      <label for="DSM">DSM</label><br>
+      <input type="submit" value="Start Calibration">
+    </form>
+  </div>
+
+  <div id="calibration_terminal">
+    <div id="container">
+      <ul id="terminal_list"></ul>
+    </div>
+
+    <div id="key_btn">
+      <input type="button" value="Press a Key" onclick="press_a_key()">
+    </div>
+  </div>
+
+<script src="js/calibration.js"></script>
+<script src="js/nav.js"></script>
+</body>
+
+</html>

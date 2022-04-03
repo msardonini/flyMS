@@ -25,9 +25,9 @@ PositionController::PositionController(const YAML::Node &config_params) {
 
   for (int i = 0; i < 2; i++) {
     // pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, LOOP_DELTA_T);
-    pid_[0][i] = generate_pid(pid_coeffs_x[i], LOOP_DELTA_T, 0.15);
-    pid_[0][i] = generate_pid(pid_coeffs_y[i], LOOP_DELTA_T, 0.15);
-    pid_[0][i] = generate_pid(pid_coeffs_z[i], LOOP_DELTA_T, 0.15);
+    pid_[0][i] = generate_pid(pid_coeffs_x[i], 0.15, LOOP_DELTA_T);
+    pid_[0][i] = generate_pid(pid_coeffs_y[i], 0.15, LOOP_DELTA_T);
+    pid_[0][i] = generate_pid(pid_coeffs_z[i], 0.15, LOOP_DELTA_T);
   }
 
   // Conversion matrix to map roll, pitch, throttle commands from PID output in XYZ frame

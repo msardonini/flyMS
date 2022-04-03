@@ -1,0 +1,40 @@
+h2 {
+  margin: 0;
+  padding: .75em 0em .25em .5em;
+}
+
+#form_calibration {
+  margin: 0;
+  padding-left: 2em;
+}
+
+#container {
+  background-color: black;
+  width: 90%;
+  height: 20em;
+  border: 3px solid gray;
+  margin: 2.5%;
+  vertical-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#container #terminal_list {
+  color: white;
+  list-style-type: none;
+  margin: auto 0 auto 0;
+  padding-left: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+#calibration_terminal {
+  display: none;
+  text-align: center;
+}
+
+#calibration_terminal #container {
+  text-align: left;
+}
+/*# sourceMappingURL=calibration.css.map */

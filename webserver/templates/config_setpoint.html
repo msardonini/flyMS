@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/config.css" />
+  <title>Document</title>
+</head>
+<body>
+  <div class="navbar">
+    <div class="container">
+      <a class="logo" href="/">fly<span>MS</span></a>
+
+      <img
+        id="mobile-cta"
+        class="mobile-menu"
+        src="images/menu.svg"
+        alt="Open Navigation"
+      />
+
+      <nav>
+        <img
+          id="mobile-exit"
+          class="mobile-menu-exit"
+          src="images/exit.svg"
+          alt="Close Navigation"
+        />
+
+        <ul class="primary-nav">
+          <li class="current"><a href="/">Home</a></li>
+          <li><a href="config_controller.html">Configure Controller</a></li>
+          <li><a href="config_setpoint.html">Configure Setpoint</a></li>
+          <li><a href="calibration.html">Calibration</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <section class="setpoint-section">
+    <div class="container">
+      <form
+        id="form_setpoint"
+        action="{{ url_for('configsetpoint') }}"
+        method="POST"
+        class="form_setpoint"
+      >
+        <h2>Setpoint Constants</h2>
+        <p>
+          Configure the min/max setpoint values interpreted by the remote
+          controller
+        </p>
+
+        <h3>Min/Max Throttle</h3>
+        <p>
+          Configure the minimum and maximum throttle value. This is the
+          percentage of power all motors get when the throttle stick is all
+          the way down, and all the way up
+        </p>
+
+        <div class="pid_entry">
+          <label for="min_throttle">Min Throttle:</label>
+          <input
+            type="number"
+            step="any"
+            name="min_throttle"
+            id="min_throttle"
+          />
+        </div>
+
+        <div class="pid_entry">
+          <label for="max_throttle">Max Throttle:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_throttle"
+            id="max_throttle"
+          />
+        </div>
+
+        <h3>Max Setpoints in Stabilized Flight Mode</h3>
+        <p>
+          The max commanded (roll, pitch, yaw_rate) values in (rad, rad,
+          rad/s)
+        </p>
+
+        <div class="pid_entry">
+          <label for="max_roll_setpoint_stabilized">Roll:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_roll_setpoint_stabilized"
+            id="max_roll_setpoint_stabilized"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="max_pitch_setpoint_stabilized">Pitch:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_pitch_setpoint_stabilized"
+            id="max_pitch_setpoint_stabilized"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="max_yaw_setpoint_stabilized">Yaw:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_yaw_setpoint_stabilized"
+            id="max_yaw_setpoint_stabilized"
+          />
+        </div>
+
+        <h3>Max Setpoints in Acro Flight Mode</h3>
+        <p>
+          The max commanded (roll, pitch, yaw_rate) values in (rad/s, rad/s,
+          rad/s)
+        </p>
+
+        <div class="pid_entry">
+          <label for="max_roll_setpoint_acro">Roll:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_roll_setpoint_acro"
+            id="max_roll_setpoint_acro"
+          />
+        </div>
+
+        <div class="pid_entry">
+          <label for="max_pitch_setpoint_acro">Pitch:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_pitch_setpoint_acro"
+            id="max_pitch_setpoint_acro"
+          />
+        </div>
+
+        <div class="pid_entry">
+          <label for="max_yaw_setpoint_acro">Yaw:</label>
+          <input
+            type="number"
+            step="any"
+            name="max_yaw_setpoint_acro"
+            id="max_yaw_setpoint_acro"
+          />
+        </div>
+
+          <div class="buttons">
+
+            <input
+            type="button"
+            onclick="load_setpoint()"
+            value="Load Setpoint Values"
+            id="load_setpoint_btn"
+            />
+            <input type="button" onclick="submit_setpoint(this.form)" value="Submit Values" id="button2">
+          </div>
+      </form>
+    </div>
+  </section>
+  <script src="js/config_setpoint.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>

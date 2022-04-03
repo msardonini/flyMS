@@ -1,9 +1,9 @@
 #!/bin/bash
 
-sudo systemctl stop flyMS.service
-sudo systemctl stop pruHandler.service
+sudo systemctl stop flyMS
+sudo systemctl stop pru_handler
 
 sudo rc_calibrate_escs
 
-sudo systemctl start pruHandler.service
-sudo systemctl start flyMS.service
+sudo systemctl start pru_handler
+sudo systemctl start flyMS

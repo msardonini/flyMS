@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/config.css" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="navbar">
+      <div class="container">
+        <a class="logo" href="/">fly<span>MS</span></a>
+
+        <img
+          id="mobile-cta"
+          class="mobile-menu"
+          src="images/menu.svg"
+          alt="Open Navigation"
+        />
+
+        <nav>
+          <img
+            id="mobile-exit"
+            class="mobile-menu-exit"
+            src="images/exit.svg"
+            alt="Close Navigation"
+          />
+
+          <ul class="primary-nav">
+            <li class="current"><a href="/">Home</a></li>
+            <li><a href="config_controller.html">Configure Controller</a></li>
+            <li><a href="config_setpoint.html">Configure Setpoint</a></li>
+            <li><a href="calibration.html">Calibration</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <section class="controller-section">
+      <h2>PID Constants</h2>
+      <p>Configure the PID constants for the flight controller</p>
+      <form
+        id="form_controller"
+        action="{{ url_for('configcontroller') }}"
+        method="POST"
+        class="form_controller"
+      >
+        <h3>Roll Controller</h3>
+        <p>Inner Loop Roll Controller</p>
+        <div class="pid_entry">
+          <label for="Kp_roll_inner">Kp: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kp_roll_inner"
+            id="Kp_roll_inner"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Ki_roll_inner">Ki: </label>
+          <input
+            type="number"
+            step="any"
+            name="Ki_roll_inner"
+            id="Ki_roll_inner"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Kd_roll_inner">Kd: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kd_roll_inner"
+            id="Kd_roll_inner"
+          />
+        </div>
+
+        <p>Outer Loop Roll Controller</p>
+        <div class="pid_entry">
+          <label for="Kp_roll_outer">Kp: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kp_roll_outer"
+            id="Kp_roll_outer"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Ki_roll_outer">Ki: </label>
+          <input
+            type="number"
+            step="any"
+            name="Ki_roll_outer"
+            id="Ki_roll_outer"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Kd_roll_outer">Kd: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kd_roll_outer"
+            id="Kd_roll_outer"
+          />
+        </div>
+
+        <h3>Pitch Controller</h3>
+
+        <p>Inner Loop Pitch Controller</p>
+
+        <div class="pid_entry">
+          <label for="Kp_pitch_inner">Kp: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kp_pitch_inner"
+            id="Kp_pitch_inner"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Ki_pitch_inner">Ki: </label>
+          <input
+            type="number"
+            step="any"
+            name="Ki_pitch_inner"
+            id="Ki_pitch_inner"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Kd_pitch_inner">Kd: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kd_pitch_inner"
+            id="Kd_pitch_inner"
+          />
+        </div>
+
+        <p>Outer Loop pitch Controller</p>
+        <div class="pid_entry">
+          <label for="Kp_pitch_outer">Kp: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kp_pitch_outer"
+            id="Kp_pitch_outer"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Ki_pitch_outer">Ki: </label>
+          <input
+            type="number"
+            step="any"
+            name="Ki_pitch_outer"
+            id="Ki_pitch_outer"
+          />
+        </div>
+        <div class="pid_entry">
+          <label for="Kd_pitch_outer">Kd: </label>
+          <input
+            type="number"
+            step="any"
+            name="Kd_pitch_outer"
+            id="Kd_pitch_outer"
+          />
+        </div>
+
+        <h3>Yaw Controller</h3>
+
+        <p>Yaw Controller</p>
+        <div class="pid_entry">
+          <label for="Kp_yaw">Kp: </label>
+          <input type="number" step="any" name="Kp_yaw" id="Kp_yaw" />
+        </div>
+        <div class="pid_entry">
+          <label for="Ki_yaw">Ki: </label>
+          <input type="number" step="any" name="Ki_yaw" id="Ki_yaw" />
+        </div>
+        <div class="pid_entry">
+          <label for="Kd_yaw">Kd: </label>
+          <input type="number" step="any" name="Kd_yaw" id="Kd_yaw" />
+        </div>
+
+        <div class="buttons">
+          <input
+            type="button"
+            onclick="load_controller()"
+            value="Load Controller Values"
+            id="load_controller_btn"
+          />
+          <input type="button" onclick="submit_controller(this.form)" value="Submit Values" id="button2">
+        </div>
+      </form>
+    </section>
+
+    <script src="js/config_controller.js"></script>
+    <script src="js/nav.js"></script>
+  </body>
+</html>

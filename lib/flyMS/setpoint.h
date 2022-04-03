@@ -86,28 +86,29 @@ class Setpoint {
    *
    * @return     The setpoint data.
    */
-  SetpointData GetSetpointData();
+  SetpointData get_setpoint_data();
 
   /**
    * @brief Set the Yaw Setpoint value to a user defined offset
    *
    * @param ref the reference value to set
    */
-  void SetYawRef(float ref);
+  void set_yaw_ref(float ref);
 
   /**
    * @brief Get the Min Throttle
    *
    * @return float
    */
-  float GetMinThrottle() const { return throttle_limits_[0]; }
+  float get_min_throttle() const { return throttle_limits_[0]; }
 
  private:
   /**
    * @brief Loop which reads dsm data and makes it available to the user via GetSetpointData()
    *
    */
-  void SetpointManager();
+  void setpoint_manager();
+
   std::thread setpoint_thread_;  //< Thread that reads dsm2 UART
   std::mutex setpoint_mutex_;    //< Mutex that protects setpoint_data_
   SetpointData setpoint_data_;   //< Data to be shared with the user when called

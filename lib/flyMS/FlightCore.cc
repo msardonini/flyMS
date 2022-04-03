@@ -77,7 +77,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *                          Get Setpoint Data                            *
    ************************************************************************/
-  auto setpoint = setpoint_module_.GetSetpointData();
+  auto setpoint = setpoint_module_.get_setpoint_data();
 
   // If we have commanded a switch in Aux, activate the perception system
   if (mavlink_interface_) {
@@ -162,7 +162,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *                  Reset the Integrators if Landed                      *
    ************************************************************************/
-  if (setpoint.throttle < setpoint_module_.GetMinThrottle() + .01) {
+  if (setpoint.throttle < setpoint_module_.get_min_throttle() + .01) {
     integrator_reset_++;
   } else {
     integrator_reset_ = 0;
@@ -171,7 +171,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   // if landed for 2 seconds, reset integrators and Yaw error
   if (integrator_reset_ > 2 / LOOP_DELTA_T) {
     setpoint.euler_ref[2] = imu_data_body.euler[2];
-    setpoint_module_.SetYawRef(imu_data_body.euler[2]);
+    setpoint_module_.set_yaw_ref(imu_data_body.euler[2]);
     zero_pids();
   }
 
@@ -194,7 +194,21 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *             Check Output Ranges, if outside, adjust                 *
    ************************************************************************/
-  CheckOutputRange(u);
+  static constexpr float smallest_value = 0.f;
+  float largest_value = 1.f;
+  for (int i = 0; i < 4; i++) {
+    if (u[i] > largest_value) {
+      largest_value = u[i];
+    }
+
+    if (u[i] < smallest_value) u[i] = 0;
+  }
+
+  // if upper saturation would have occurred, reduce all outputs evenly
+  if (largest_value > 1) {
+    float offset = largest_value - 1;
+    for (int i = 0; i < 4; i++) u[i] -= offset;
+  }
 
   /************************************************************************
    *                  Send Commands to ESCs                         *
@@ -213,7 +227,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
 
   // Print some stuff to the console in debug mode
   if (is_debug_mode_) {
-    ConsolePrint(imu_data_body, setpoint);
+    console_print(imu_data_body, setpoint);
   }
   /************************************************************************
    *             Check for GPS Data and Handle Accordingly               *
@@ -230,7 +244,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   return 0;
 }
 
-int FlightCore::ConsolePrint(const StateData &imu_data_body, const SetpointData &setpoint) {
+int FlightCore::console_print(const StateData &imu_data_body, const SetpointData &setpoint) {
   //  spdlog::info("time {:3.3f} ", control->time);
   //  spdlog::info("Alt_ref {:3.1f} ",control->alt_ref);
   // spdlog::info("U1: {:2.2f}, U2: {:2.2f}, U3: {:2.2f}, U4: {:2.2f} ", u[0],
@@ -263,23 +277,6 @@ int FlightCore::ConsolePrint(const StateData &imu_data_body, const SetpointData 
   //  spdlog::info(" HDOP: {}", control->GPS_data.HDOP);
   //  spdlog::info("Baro Alt: {} ",control->baro_alt);
   return 0;
-}
-
-void FlightCore::CheckOutputRange(std::array<float, 4> &u) {
-  float largest_value = 1;
-  float smallest_value = 0;
-
-  for (int i = 0; i < 4; i++) {
-    if (u[i] > largest_value) largest_value = u[i];
-
-    if (u[i] < smallest_value) u[i] = 0;
-  }
-
-  // if upper saturation would have occurred, reduce all outputs evenly
-  if (largest_value > 1) {
-    float offset = largest_value - 1;
-    for (int i = 0; i < 4; i++) u[i] -= offset;
-  }
 }
 
 void FlightCore::init_logging(const std::string &log_location) {
@@ -322,7 +319,7 @@ void FlightCore::init_logging(const std::string &log_location) {
   ulog_.init(log_dir);
 }
 
-int FlightCore::StartupRoutine() {
+int FlightCore::init() {
   // Create a file for logging and initialize our file logger
   init_logging(log_filepath_);
 

@@ -1,9 +1,9 @@
 flyMSParams:
     log_filepath: "/home/debian/log"
     debug_mode: false
-    enable_gps: 1
+    enable_gps: false
     flight_mode: 1
-    enable_logging: 1
+    enable_logging: true
     mavlink_interface:
         enable: false
         serial_device: "/dev/ttyS5"

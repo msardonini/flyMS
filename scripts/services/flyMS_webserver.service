@@ -6,7 +6,8 @@ After=network.target robotcontrol.service pruHandler.service
 User=debian
 Restart=always
 PIDFile=/var/run/flyMS.pid
-ExecStart=python3 /home/debian/bin/flyMS_webserver.py
+ExecStart=python3 /home/debian/bin/webserver/webserver.py
+WorkingDirectory=/home/debian/bin/webserver
 
 [Install]
 WantedBy=multi-user.target

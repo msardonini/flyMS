@@ -54,6 +54,7 @@ function prep_output_folder {
   mkdir products/.config
   cp -r build/bin products
   cp -r scripts/* products/bin
+  cp -r webserver products/bin
   [ ! -z $1 ] && cp $1 products/.config/flyMSConfig.yaml
 }
 

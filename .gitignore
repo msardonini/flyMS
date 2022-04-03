@@ -1,3 +1,5 @@
 .vscode**
 build**
 products**
+__pycache__
+**.pyc

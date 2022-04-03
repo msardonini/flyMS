@@ -62,7 +62,7 @@ void Setpoint::init() {
     throw std::invalid_argument("DSM failed to initialize");
   }
 
-  setpoint_thread_ = std::thread(&Setpoint::SetpointManager, this);
+  setpoint_thread_ = std::thread(&Setpoint::setpoint_manager, this);
 }
 
 void Setpoint::wait_for_data_packet() {
@@ -72,12 +72,12 @@ void Setpoint::wait_for_data_packet() {
 }
 
 // Gets the data from the local thread. Returns zero if no new data is available
-SetpointData Setpoint::GetSetpointData() {
+SetpointData Setpoint::get_setpoint_data() {
   std::lock_guard<std::mutex> lock(setpoint_mutex_);
   return setpoint_data_;
 }
 
-void Setpoint::SetpointManager() {
+void Setpoint::setpoint_manager() {
   uint32_t dsm2_timeout_counter = 0;
   while (is_running_.load()) {
     if (rc_dsm_is_new_data()) {
@@ -139,6 +139,6 @@ void Setpoint::SetpointManager() {
   }
 }
 
-void Setpoint::SetYawRef(float ref) { setpoint_data_.euler_ref[2] = ref; }
+void Setpoint::set_yaw_ref(float ref) { setpoint_data_.euler_ref[2] = ref; }
 
 }  // namespace flyMS

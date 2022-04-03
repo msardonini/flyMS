@@ -1,0 +1,9 @@
+%debian ALL= NOPASSWD: /bin/systemctl start flyMS
+%debian ALL= NOPASSWD: /bin/systemctl stop flyMS
+%debian ALL= NOPASSWD: /bin/systemctl restart flyMS
+
+%debian ALL= NOPASSWD: /bin/systemctl start pru_handler
+%debian ALL= NOPASSWD: /bin/systemctl stop pru_handler
+%debian ALL= NOPASSWD: /bin/systemctl restart pru_handler
+
+%debian ALL= NOPASSWD: /usr/bin/rc_calibrate_escs

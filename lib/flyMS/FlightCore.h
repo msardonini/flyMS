@@ -42,6 +42,14 @@ class FlightCore {
   ~FlightCore() = default;
 
   /**
+   * @brief Perform all initialization tasks and start threads
+   *
+   * @return int
+   */
+  int init();
+
+ private:
+  /**
    * @brief Main control loop calculation for the flight stack. This function is registered to the Imu object as a
    * callback which gets invoked every time the IMU signals data is available to procoess
    *
@@ -51,26 +59,10 @@ class FlightCore {
   int flight_core(StateData &imu_data_body);
 
   /**
-   * @brief Perform all initialization tasks and start threads
-   *
-   * @return int
-   */
-  int StartupRoutine();
-
- private:
-  /**
    * @brief Zeros the data stored in the PID controllers, helps reset the integrator
    *
    */
   void zero_pids();
-
-  /**
-   * @brief Checks the output signals before sending commands to motors. If any of the signals are too high (>1), all
-   * channels are reduced evenly
-   *
-   * @param u The vector of signals going to ESCs/motors
-   */
-  void CheckOutputRange(std::array<float, 4> &u);
 
   /**
    * @brief Initializes all logging for flyMS. First, it creates a unique log directory 'runXXX' (datatime not used
@@ -87,7 +79,7 @@ class FlightCore {
    * @param setpoint setpoint data
    * @return int
    */
-  int ConsolePrint(const StateData &imu_data_body, const SetpointData &setpoint);
+  int console_print(const StateData &imu_data_body, const SetpointData &setpoint);
 
   // Variables for working with flyStereo
   bool flyStereo_running_ = false;

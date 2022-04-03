@@ -34,13 +34,10 @@ void initSignalHandler() {
   signal(SIGHUP, onSignalReceived);
 }
 
-void handle_error() {
+void shutdown() {
   rc_set_state(EXITING);
   rc_led_set(RC_LED_GREEN, 0);
   rc_led_set(RC_LED_RED, 1);
-
-  // Keep red LED on for 5 seconds
-  std::this_thread::sleep_for(std::chrono::seconds(5));
 }
 
 int main(int argc, char *argv[]) {
@@ -83,7 +80,7 @@ int main(int argc, char *argv[]) {
   // Load the Yaml Node
   YAML::Node config_params = flyMS::get_config("http://localhost:5001/config");
   if (config_params.size() == 0) {
-    handle_error();
+    shutdown();
     return -1;
   } else {
     config_params = config_params["flyMSParams"];
@@ -98,11 +95,14 @@ int main(int argc, char *argv[]) {
 
   flyMS::FlightCore fly(config_params);
   // Initialize the flight hardware
-  if (fly.StartupRoutine()) {
+  if (fly.init()) {
     rc_set_state(EXITING);
     spdlog::error("Startup failed, exiting");
-    handle_error();
+    shutdown();
     return -1;
+  } else {
+    rc_led_set(RC_LED_GREEN, 1);
+    rc_led_set(RC_LED_RED, 0);
   }
   while (rc_get_state() != EXITING) {
     std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -87,7 +87,8 @@ double DigitalFilter::update_filter(double val) {
 
 DigitalFilter generate_pid(double kp, double ki, double kd, double tf, double dt) {
   if (tf <= 2 * dt) {
-    throw std::invalid_argument("tf must be > 2dt for stability");
+    throw std::invalid_argument("tf (" + std::to_string(tf) + ") must be > 2dt (" + std::to_string(dt) +
+                                ")  for stability");
   }
   // if ki==0, return a PD filter with rolloff
   if (ki == 0) {
