@@ -16,3 +16,9 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = git@github.com:google/googletest.git
+[submodule "external/redis-plus-plus"]
+	path = external/redis-plus-plus
+	url = https://github.com/sewenew/redis-plus-plus.git
+[submodule "external/mavlink"]
+	path = external/mavlink
+	url = https://github.com/mavlink/c_library_v2.git

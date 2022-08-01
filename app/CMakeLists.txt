@@ -25,7 +25,17 @@ target_link_libraries(flyMS_app
   PRIVATE
     flyMS
 )
-set_target_properties(flyMS_app test_webserver pru_handler_app
+
+add_executable(flyStereo_interface
+  flyStereo_interface.cc
+)
+target_link_libraries(flyStereo_interface
+  PRIVATE
+    flyMS
+    redis++_static
+)
+
+set_target_properties(flyMS_app test_webserver pru_handler_app flyStereo_interface
   PROPERTIES
   LINK_FLAGS "-static-libstdc++ -static-libgcc"
   # LINK_FLAGS "-static"

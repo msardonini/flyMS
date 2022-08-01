@@ -47,7 +47,7 @@ void Imu::dmp_callback() {
   user_func_(imu_data_body);
 }
 
-int Imu::init(const YAML::Node &config, std::function<int(StateData &)> &user_func) {
+int Imu::init(const YAML::Node &config, std::function<void(StateData &)> &user_func) {
   // Load the transform from imu to body frame
   R_imu_body_ = Eigen::Matrix<float, 3, 3, Eigen::RowMajor>(config["R_imu_body"].as<std::array<float, 9> >().data());
   R_imu_body_dmp_ = R_imu_body_;
@@ -63,8 +63,6 @@ int Imu::init(const YAML::Node &config, std::function<int(StateData &)> &user_fu
   conf.dmp_sample_rate = LOOP_FREQUENCY;
   conf.orient = ORIENTATION_Z_UP;
 
-  std::cout << R_imu_body_ << std::endl;
-
   // Check our DCM for the proper orientation config parameter
   constexpr float thresh = 0.95f;
   if (R_imu_body_(0, 2) > thresh) {
@@ -77,7 +75,6 @@ int Imu::init(const YAML::Node &config, std::function<int(StateData &)> &user_fu
     conf.orient = ORIENTATION_Y_UP;
     throw std::invalid_argument("Y up orientation not yet tested\n");
   } else if (R_imu_body_(1, 2) < -thresh) {
-    std::cout << "the value of it is " << R_imu_body_(1, 2) << std::endl;
     conf.orient = ORIENTATION_Y_DOWN;
     throw std::invalid_argument("Y down orientation not yet tested\n");
   } else if (R_imu_body_(2, 2) > thresh) {
@@ -96,7 +93,6 @@ int Imu::init(const YAML::Node &config, std::function<int(StateData &)> &user_fu
     rc_led_set(RC_LED_GREEN, 0);
     throw std::invalid_argument(err_msg);
   }
-  // spdlog::debug("init 2");
 
   if (rc_mpu_initialize_dmp(&imu_data_, conf)) {
     spdlog::error("rc_mpu_initialize failed");

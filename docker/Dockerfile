@@ -1,6 +1,20 @@
 FROM debian:buster-slim
 
-RUN apt-get update && apt-get install -y cmake gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+RUN apt-get update && apt-get install -y git cmake gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+ENV CC=/usr/bin/arm-linux-gnueabihf-gcc
+ENV CXX=/usr/bin/arm-linux-gnueabihf-g++
+
+# Cross compile hiredis. This is done here instead of in the project because redis-plus-plus expects to find this
+# library pre-installed on the system
+RUN cd /opt && \
+  git clone https://github.com/redis/hiredis.git && \
+  cd hiredis && \
+  mkdir build && \
+  cd build && \
+  cmake -D CMAKE_C_COMPILER=/usr/bin/arm-linux-gnueabihf-gcc -D CMAKE_CXX_COMPILER=/usr/bin/arm-linux-gnueabihf-g++ .. && \
+  make && \
+  make install
 
 ARG UNAME=builduser
 ARG UID=1000

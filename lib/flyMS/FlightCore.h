@@ -18,9 +18,9 @@
 #include "flyMS/DigitalFilter.hpp"
 #include "flyMS/gps.h"
 #include "flyMS/imu/Imu.h"
-#include "flyMS/mavlink_interface.h"
 #include "flyMS/position_generator.h"
 #include "flyMS/pru_client.h"
+#include "flyMS/redis_interface.h"
 #include "flyMS/setpoint.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
@@ -40,6 +40,11 @@ class FlightCore {
    */
   FlightCore(const YAML::Node &input_params);
   ~FlightCore() = default;
+  FlightCore() = delete;
+  FlightCore(const FlightCore &) = delete;
+  FlightCore(FlightCore &&) = delete;
+  FlightCore &operator=(const FlightCore &) = delete;
+  FlightCore &operator=(FlightCore &&) = delete;
 
   /**
    * @brief Perform all initialization tasks and start threads
@@ -54,9 +59,8 @@ class FlightCore {
    * callback which gets invoked every time the IMU signals data is available to procoess
    *
    * @param imu_data_body
-   * @return int
    */
-  int flight_core(StateData &imu_data_body);
+  void flight_core(StateData &imu_data_body);
 
   /**
    * @brief Zeros the data stored in the PID controllers, helps reset the integrator
@@ -92,14 +96,14 @@ class FlightCore {
   // and reset the integrators in the PID controllers
   int integrator_reset_ = 0;
 
-  Imu &imu_module_;                         //< Reference to Imu singleton object and Data struct from the imu manager
-  ULog ulog_;                               //< Class to handle and write to the log file
-  pruClient pru_client_;                    //< Object that communicates with the pru_handler process
-  Setpoint setpoint_module_;                //< Object and Data struct from the setpoint manager
-  MavlinkInterface mavlink_interface_;      //< Object to handle the I/O on the serial port
-  PositionController position_controller_;  //< Controller for position when flying using flySetero
-  gps gps_module_;                          //< Data struct from the gps manager
-  GPS_data_t gps_;                          //< GPS Manager
+  Imu &imu_module_;           //< Reference to Imu singleton object and Data struct from the imu manager
+  ULog ulog_;                 //< Class to handle and write to the log file
+  PruClient pru_client_;      //< Object that communicates with the pru_handler process
+  Setpoint setpoint_module_;  //< Object and Data struct from the setpoint manager
+  std::unique_ptr<RedisInterface> redis_interface_;  //< Object to handle the I/O with redis
+  PositionController position_controller_;           //< Controller for position when flying using flySetero
+  gps gps_module_;                                   //< Data struct from the gps manager
+  GPS_data_t gps_;                                   //< GPS Manager
 
   DigitalFilter roll_inner_PID_;
   DigitalFilter roll_outer_PID_;

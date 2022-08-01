@@ -62,6 +62,7 @@ void Setpoint::init() {
     throw std::invalid_argument("DSM failed to initialize");
   }
 
+  is_running_.store(true);
   setpoint_thread_ = std::thread(&Setpoint::setpoint_manager, this);
 }
 

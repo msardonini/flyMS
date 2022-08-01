@@ -25,22 +25,34 @@
 #include <thread>
 #include <vector>
 
-// Package Includes
-#include "roboticscape.h"
-
 namespace flyMS {
 
-class pruClient {
+/**
+ * @brief Client which handles communications with the pru_handler daemon to send commands to Electronic Speed
+ * Controllers (ESCs)
+ *
+ */
+class PruClient {
  public:
   // Default Constructor
-  pruClient();
+  PruClient();
 
   // Default Destructor
-  ~pruClient();
+  ~PruClient();
 
-  int setSendData(std::array<float, 4> u);
+  /**
+   * @brief Sends a command to the pru_handler daemon to set the ESCs to a specific speed
+   *
+   * @param u Array of values to send to the ESCs, motors 1-4
+   */
+  void send_data(std::array<float, 4> u);
 
-  int startPruClient();
+  /**
+   * @brief Initializes the pru_handler
+   *
+   * @return int 0 on success, -1 on failure
+   */
+  int init();
 
  private:
   // Socket variables

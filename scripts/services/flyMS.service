@@ -1,6 +1,6 @@
 [Unit]
 Description=flyMS
-After=network.target robotcontrol.service pruHandler.service flyMS_webserver.service
+After=network.target robotcontrol.service pru_handler.service flyMS_webserver.service generic-board-startup.service
 
 [Service]
 User=debian

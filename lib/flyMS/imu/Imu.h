@@ -42,7 +42,7 @@ class Imu {
    * @param func callback function to use when data is received
    * @return 0 on sucess, -1 on failure
    */
-  int init(const YAML::Node &config, std::function<int(StateData &)> &func);
+  int init(const YAML::Node &config, std::function<void(StateData &)> &func);
 
  private:
   Imu() = default;
@@ -70,10 +70,10 @@ class Imu {
   float yaw_prev_ = 0.f;                   //< The yaw value from the previous iteration
   Eigen::Matrix<float, 3, 3> R_imu_body_;  //< Rotation matrix for imu to body conversions
   Eigen::Matrix<float, 3, 3>
-      R_imu_body_dmp_;      //< 3D rotation that trasforms the DMP coordiante system to the drone's body frame, which is
-                            // usually different than the coordiante system of the IMU
+      R_imu_body_dmp_;  //< 3D rotation that transforms the DMP coordinate system to the drone's body frame, which is
+                        // usually different than the coordinate system of the IMU
   rc_mpu_data_t imu_data_;  //< data struct that is used to pass imu values from the API
-  std::function<int(StateData &)>
+  std::function<void(StateData &)>
       user_func_;  //< The callback fuction provided by the user to call with populated imu data
 };
 

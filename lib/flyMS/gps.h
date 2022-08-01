@@ -23,7 +23,7 @@
 #include <vector>
 
 // Package Includes
-#include <roboticscape.h>
+// #include <roboticscape.h>
 
 #include "yaml-cpp/yaml.h"
 
@@ -54,10 +54,12 @@ typedef struct GPS_data_t {
 
 class gps {
  public:
-  gps(const YAML::Node input_params);
+  gps();
 
   // Default Destructor
   ~gps();
+
+  void init();
 
   // Main thread which controls the inner loop FCS
   int flightCore();

@@ -16,10 +16,11 @@
 #include "flyMS/FlightCore.h"
 #include "flyMS/config_requestor.h"
 #include "flyMS/ready_check.h"
+#include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
 
-void onSignalReceived(int signo) {
+void on_signal_received(int signo) {
   switch (signo) {
     case SIGHUP:
       break;
@@ -29,9 +30,9 @@ void onSignalReceived(int signo) {
 }
 
 void initSignalHandler() {
-  signal(SIGINT, onSignalReceived);
-  signal(SIGKILL, onSignalReceived);
-  signal(SIGHUP, onSignalReceived);
+  signal(SIGINT, on_signal_received);
+  signal(SIGKILL, on_signal_received);
+  signal(SIGHUP, on_signal_received);
 }
 
 void shutdown() {

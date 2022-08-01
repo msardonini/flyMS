@@ -25,6 +25,8 @@ target_link_libraries(flyMS
     Eigen3::Eigen
     yaml-cpp
     HTTPRequest
+    mavlink_v2
+    redis++_static
 )
 
 target_include_directories(flyMS

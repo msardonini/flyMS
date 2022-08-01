@@ -8,13 +8,23 @@
 
 #include "flyMS/gps.h"
 
+#include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 
 namespace flyMS {
 
-// TODO take our the hardware inits outside of the class constructor
 // Default Constructor
-gps::gps(const YAML::Node input_params) {
+gps::gps() {}
+
+// Default Destructor
+gps::~gps() {
+  // Join the Thread if running
+  if (this->gpsThread.joinable()) {
+    this->gpsThread.join();
+  }
+}
+
+void gps::init() {
   int res;
   struct termios newtio;
   char buf[255];
@@ -117,12 +127,6 @@ gps::gps(const YAML::Node input_params) {
     // timeout or error
     spdlog::info("GPS Failed, Contining on without GPS\n");
   }
-}
-
-// Default Destructor
-gps::~gps() {
-  // Join the Thread if running
-  if (this->gpsThread.joinable()) this->gpsThread.join();
 }
 
 int gps::dataMonitor() {

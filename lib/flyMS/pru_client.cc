@@ -1,6 +1,6 @@
 /**
- * @file pruClient.hpp
- * @brief Source code to talk to pruClient module for ESC control signals
+ * @file PruClient.hpp
+ * @brief Source code to talk to PruClient module for ESC control signals
  *
  * @author Mike Sardonini
  * @date 10/15/2018
@@ -18,16 +18,14 @@ namespace flyMS {
 constexpr int NUM_CHANNELS = 4;
 constexpr char PRU_PID_FILE[] = "/var/run/pru_handler.pid";
 
-pruClient::pruClient() {}
+PruClient::PruClient() {}
 
-pruClient::~pruClient() {
+PruClient::~PruClient() {
   // Issue the shutdown command to the pru handler
   char send_buffer[16];
   for (int i = 0; i < 4; i++) {
     send_buffer[0] = 0xAA;
     send_buffer[1] = 0xBB;
-    send_buffer[10] = 0xEE;
-    send_buffer[11] = 0xFF;
     send_buffer[2] = 's';
     send_buffer[3] = 'h';
     send_buffer[4] = 'u';
@@ -36,12 +34,14 @@ pruClient::~pruClient() {
     send_buffer[7] = 'o';
     send_buffer[8] = 'w';
     send_buffer[9] = 'n';
+    send_buffer[10] = 0xEE;
+    send_buffer[11] = 0xFF;
     write(sockfd_, send_buffer, sizeof(send_buffer) - 1);
   }
   close(sockfd_);
 }
 
-int pruClient::startPruClient() {
+int PruClient::init() {
   // Check to see if the pru server is runningi, if not start it
   if (access(PRU_PID_FILE, F_OK) == -1) {
     spdlog::warn("Pru handler is not runnining, starting a new process now");
@@ -81,7 +81,7 @@ int pruClient::startPruClient() {
   return 0;
 }
 
-int pruClient::setSendData(std::array<float, NUM_CHANNELS> u) {
+void PruClient::send_data(std::array<float, NUM_CHANNELS> u) {
   char send_buffer[16];
 
   send_buffer[0] = 0xAA;
@@ -110,8 +110,6 @@ int pruClient::setSendData(std::array<float, NUM_CHANNELS> u) {
   }
   // Send the data
   write(sockfd_, send_buffer, sizeof(send_buffer) - 1);
-
-  return 0;
 }
 
 }  // namespace flyMS

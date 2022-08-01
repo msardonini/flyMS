@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "rc/start_stop.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -34,9 +35,8 @@ FlightCore::FlightCore(const YAML::Node &config_params)
     : imu_module_(Imu::getInstance()),
       ulog_(),
       setpoint_module_(config_params),
-      mavlink_interface_(config_params),
       position_controller_(config_params),
-      gps_module_(config_params),
+      gps_module_(),
       config_params_(config_params) {
   flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
   is_debug_mode_ = config_params["debug_mode"].as<bool>();
@@ -46,20 +46,17 @@ FlightCore::FlightCore(const YAML::Node &config_params)
   max_control_effort_ = controller["max_control_effort"].as<std::array<float, 3>>();
 }
 
-int FlightCore::flight_core(StateData &imu_data_body) {
-  if (mavlink_interface_) {
-    mavlink_interface_.SendImuMessage(imu_data_body);
-  }
-
+void FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *       Check the Mavlink Interface for New Visual Odometry Data
    ************************************************************************/
-
   Eigen::Vector3f setpoint_orientation;
-  if (mavlink_interface_) {
-    VioData vio;
+  if (redis_interface_) {
     float vio_yaw;
-    if (mavlink_interface_.GetVioData(&vio)) {
+    auto [vio, is_valid] = redis_interface_->GetVioData();
+
+    if (is_valid) {
+      spdlog::warn("vio x: {}, vio y: {}", vio.position[0], vio.position[1]);
       position_controller_.ReceiveVio(vio);
       position_controller_.GetSetpoint(setpoint_orientation, vio_yaw);
 
@@ -80,10 +77,10 @@ int FlightCore::flight_core(StateData &imu_data_body) {
   auto setpoint = setpoint_module_.get_setpoint_data();
 
   // If we have commanded a switch in Aux, activate the perception system
-  if (mavlink_interface_) {
+  if (redis_interface_) {
     if (setpoint.Aux[0] < 0.1 && setpoint.Aux[1] > 0.9) {
       // Transition to start flyStereo
-      mavlink_interface_.SendStartCommand();
+      redis_interface_->SendStartCommand();
 
       // Assume that the current throttle value will be an average value to keep
       // altitude
@@ -95,7 +92,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
     } else if (setpoint.Aux[0] > 0.9 && setpoint.Aux[1] < 0.1) {
       flyStereo_running_ = false;
       flyStereo_streaming_data_ = false;
-      mavlink_interface_.SendShutdownCommand();
+      redis_interface_->SendStopCommand();
 
       // Reset the filters in the Position controller
       position_controller_.ResetController();
@@ -214,7 +211,7 @@ int FlightCore::flight_core(StateData &imu_data_body) {
    *                  Send Commands to ESCs                         *
    ************************************************************************/
   if (!is_debug_mode_) {
-    pru_client_.setSendData(u);
+    pru_client_.send_data(u);
   }
 
   /************************************************************************
@@ -241,7 +238,6 @@ int FlightCore::flight_core(StateData &imu_data_body) {
     imu_data_body.timestamp_us, imu_data_body, setpoint, u, u_euler
   };
   ulog_.WriteFlightData<struct ULogFlightMsg>(flight_msg, ULogFlightMsg::ID());
-  return 0;
 }
 
 int FlightCore::console_print(const StateData &imu_data_body, const SetpointData &setpoint) {
@@ -323,9 +319,13 @@ int FlightCore::init() {
   // Create a file for logging and initialize our file logger
   init_logging(log_filepath_);
 
-  std::cout << "hi\n";
+  // TODO: improve the logic to decide whether to initialize the object or not
   if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
-    mavlink_interface_.Init();
+    redis_interface_ = std::make_unique<RedisInterface>("FlyStereoData", 1);
+  }
+
+  if (config_params_["enable_gps"].as<bool>()) {
+    gps_module_.init();
   }
 
   // Initialize the remote controller through the setpoint object
@@ -362,11 +362,11 @@ int FlightCore::init() {
   gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
 
   // Initialize the client to connect to the PRU handler
-  pru_client_.startPruClient();
+  pru_client_.init();
 
   // Start the flight program
-  std::function<int(StateData &)> f = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
-  imu_module_.init(config_params_["imu_params"], f);
+  std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
+  imu_module_.init(config_params_["imu_params"], func);
 
   return 0;
 }
