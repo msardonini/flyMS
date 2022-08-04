@@ -224,7 +224,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
 
   // Print some stuff to the console in debug mode
   if (is_debug_mode_) {
-    console_print(imu_data_body, setpoint);
+    console_print(imu_data_body, setpoint, u);
   }
   /************************************************************************
    *             Check for GPS Data and Handle Accordingly               *
@@ -240,19 +240,20 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   ulog_.WriteFlightData<struct ULogFlightMsg>(flight_msg, ULogFlightMsg::ID());
 }
 
-int FlightCore::console_print(const StateData &imu_data_body, const SetpointData &setpoint) {
+int FlightCore::console_print(const StateData &imu_data_body, const SetpointData &setpoint,
+                              const std::array<float, 4> &u) {
   //  spdlog::info("time {:3.3f} ", control->time);
   //  spdlog::info("Alt_ref {:3.1f} ",control->alt_ref);
-  // spdlog::info("U1: {:2.2f}, U2: {:2.2f}, U3: {:2.2f}, U4: {:2.2f} ", u[0],
-  // u[1], u[2], u[3]); spdlog::info("Aux {:2.1f} ", setpoint.Aux[0]);
+  // spdlog::info("U1: {:2.2f}, U2: {:2.2f}, U3: {:2.2f}, U4: {:2.2f} ", u[0], u[1], u[2], u[3]);
+  // spdlog::info("Aux {:2.1f} ", setpoint.Aux[0]);
   //  spdlog::info("function: {}",rc_get_dsm_ch_normalized(6));
   //  spdlog::info("num wraps {} ",control->num_wraps);
-  // spdlog::info(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} KS {:2.2f} ", setpoint.throttle,
-  //              setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2], setpoint.kill_switch);
+  spdlog::info(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} KS {:2.2f} ", setpoint.throttle,
+               setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2], setpoint.kill_switch);
   // spdlog::info("Roll {:1.2f}, Pitch {:1.2f}, Yaw {:2.3f}", imu_data_body.euler[0], imu_data_body.euler[1],
   //              imu_data_body.euler[2]);
-  spdlog::info("droll {:1.2f}, dpitch {:1.2f}, dyaw {:2.3f}", imu_data_body.eulerRate[0], imu_data_body.eulerRate[1],
-               imu_data_body.eulerRate[2]);
+  // spdlog::info("droll {:1.2f}, dpitch {:1.2f}, dyaw {:2.3f}", imu_data_body.eulerRate[0], imu_data_body.eulerRate[1],
+  //              imu_data_body.eulerRate[2]);
   //  spdlog::info(" Mag X {:4.2f}",control->mag[0]);
   //  spdlog::info(" Mag Y {:4.2f}",control->mag[1]);
   //  spdlog::info(" Mag Z {:4.2f}",control->mag[2]);

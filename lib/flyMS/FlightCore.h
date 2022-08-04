@@ -83,7 +83,7 @@ class FlightCore {
    * @param setpoint setpoint data
    * @return int
    */
-  int console_print(const StateData &imu_data_body, const SetpointData &setpoint);
+  int console_print(const StateData &imu_data_body, const SetpointData &setpoint, const std::array<float, 4> &u);
 
   // Variables for working with flyStereo
   bool flyStereo_running_ = false;

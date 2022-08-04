@@ -88,7 +88,7 @@ void Setpoint::setpoint_manager() {
       // DSM2 Receiver is inherently positive to the left
       if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
         setpoint_data_.euler_ref[0] = -rc_dsm_ch_normalized(2) * max_setpoints_stabilized_[0];
-        setpoint_data_.euler_ref[1] = -rc_dsm_ch_normalized(3) * max_setpoints_stabilized_[1];
+        setpoint_data_.euler_ref[1] = rc_dsm_ch_normalized(3) * max_setpoints_stabilized_[1];
       } else if (flight_mode_ == FlightMode::ACRO) {
         setpoint_data_.euler_ref[0] = -rc_dsm_ch_normalized(2) * max_setpoints_acro_[0];
         setpoint_data_.euler_ref[1] = rc_dsm_ch_normalized(3) * max_setpoints_acro_[1];
