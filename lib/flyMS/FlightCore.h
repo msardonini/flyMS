@@ -7,6 +7,19 @@
  */
 #pragma once
 
+// TODO add file doxygen comments for all files
+// TODO add a rotation matrix config field to update with the webserver
+// TODO find any other config parameters that need to be adjustable via the web interface
+// TODO expand unit tests, automate with github pipelines
+// TODO deploy documentation and webserver UI to github pages
+// TODO generate logo using DALLE
+// TODO document the following in sphinx:
+// 1. Coordinate systems for drone, body vs imu
+// 2. Wiring Diagram
+// 3. Flashing the beagle, updating with dependencies
+// 4. Building software
+// 5. Interfacing with the flyMS webserver
+
 // System Includes
 #include <array>
 #include <iostream>
@@ -16,11 +29,11 @@
 #include <vector>
 
 #include "flyMS/DigitalFilter.hpp"
+#include "flyMS/RedisInterface.h"
 #include "flyMS/gps.h"
 #include "flyMS/imu/Imu.h"
 #include "flyMS/position_generator.h"
 #include "flyMS/pru_client.h"
-#include "flyMS/redis_interface.h"
 #include "flyMS/setpoint.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
@@ -31,6 +44,10 @@
 
 namespace flyMS {
 
+/**
+ * @brief Object responsible for the inner loop of the flight controller
+ *
+ */
 class FlightCore {
  public:
   /**
@@ -39,6 +56,8 @@ class FlightCore {
    * @param input_params Input parameters needed for flight
    */
   FlightCore(const YAML::Node &input_params);
+
+  // TODO: add a non-yaml constructor
   ~FlightCore() = default;
   FlightCore() = delete;
   FlightCore(const FlightCore &) = delete;
@@ -115,7 +134,6 @@ class FlightCore {
   DigitalFilter gyro_lpf_yaw_;
 
   // Configurable parameters
-  bool is_debug_mode_;                       //< Is running in debug mode (no output to Motors)
   FlightMode flight_mode_;                   //< The current flight mode
   std::array<float, 3> max_control_effort_;  //< Maximum values allowed to to exert in each euler angle DoF
   std::string log_filepath_;                 //< The filepath to the logging directory

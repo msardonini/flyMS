@@ -16,6 +16,9 @@ RUN cd /opt && \
   make && \
   make install
 
+RUN apt-get install -y sudo doxygen python3-pip graphviz
+RUN pip3 install --upgrade pip && pip3 install sphinx_rtd_theme breathe myst_parser
+
 ARG UNAME=builduser
 ARG UID=1000
 ARG GID=1000

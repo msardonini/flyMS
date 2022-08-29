@@ -20,6 +20,7 @@ constexpr float LOOP_DELTA_T = 1.f / LOOP_FREQUENCY;
  */
 class Imu {
  public:
+  // TODO: Test without a callback function, log time, and see if gaps still occur
   // Prevent copies of the singleton Imu class
   Imu(Imu const &) = delete;
   void operator=(Imu const &) = delete;

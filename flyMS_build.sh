@@ -24,7 +24,7 @@ function print_usage {
 }
 
 function build_docker_image {
-  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` -t flyms_builder:buster ./docker
+  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` -t flyms_builder:buster --network=host ./docker
 
 
   if [ $? -ne 0 ]; then

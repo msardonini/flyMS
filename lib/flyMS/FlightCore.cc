@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "flyMS/debug_mode.hpp"
 #include "rc/start_stop.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/rotating_file_sink.h"
@@ -39,11 +40,67 @@ FlightCore::FlightCore(const YAML::Node &config_params)
       gps_module_(),
       config_params_(config_params) {
   flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
-  is_debug_mode_ = config_params["debug_mode"].as<bool>();
   log_filepath_ = config_params["log_filepath"].as<std::string>();
 
   YAML::Node controller = config_params["controller"];
   max_control_effort_ = controller["max_control_effort"].as<std::array<float, 3>>();
+}
+
+int FlightCore::init() {
+  // Create a file for logging and initialize our file logger
+  init_logging(log_filepath_);
+
+  // TODO: improve the logic to decide whether to initialize the object or not
+  if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
+    redis_interface_ = std::make_unique<RedisInterface>(1);  // max queue size of 1 (always take the latest)
+    redis_interface_->subscribe_to_channel("FlyStereoData");
+  }
+
+  if (config_params_["enable_gps"].as<bool>()) {
+    gps_module_.init();
+  }
+
+  // Initialize the remote controller through the setpoint object
+  setpoint_module_.init();
+
+  // Blocks execution until a packet is received
+  if constexpr (!kDEBUG_MODE) {
+    setpoint_module_.wait_for_data_packet();
+  }
+
+  // Tell the system that we are running if we are in the predicted UNINITIALIZED state. Else shutdown
+  if (rc_get_state() == UNINITIALIZED) {
+    rc_set_state(RUNNING);
+  } else {
+    rc_set_state(EXITING);
+  }
+
+  // Generate the PID controllers and low-pass filters
+  YAML::Node controller = config_params_["controller"];
+  YAML::Node filters = config_params_["filters"];
+  double pid_lpf_const = controller["pid_LPF_const_sec"].as<double>();
+  roll_inner_PID_ = generate_pid(controller["roll_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  roll_outer_PID_ = generate_pid(controller["roll_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  pitch_outer_PID_ =
+      generate_pid(controller["pitch_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  pitch_inner_PID_ =
+      generate_pid(controller["pitch_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+  yaw_PID_ = generate_pid(controller["yaw_PID"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
+
+  auto lpf_num = filters["imu_lpf_num"].as<std::vector<double>>();
+  auto lpf_den = filters["imu_lpf_den"].as<std::vector<double>>();
+  gyro_lpf_roll_ = DigitalFilter(lpf_num, lpf_den);
+  gyro_lpf_pitch_ = DigitalFilter(lpf_num, lpf_den);
+  gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
+
+  // Initialize the client to connect to the PRU handler
+  pru_client_.init();
+
+  // Start the flight program
+  std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
+  imu_module_.init(config_params_["imu_params"], func);
+
+  return 0;
 }
 
 void FlightCore::flight_core(StateData &imu_data_body) {
@@ -80,7 +137,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   if (redis_interface_) {
     if (setpoint.Aux[0] < 0.1 && setpoint.Aux[1] > 0.9) {
       // Transition to start flyStereo
-      redis_interface_->SendStartCommand();
+      // redis_interface_->SendStartCommand();
 
       // Assume that the current throttle value will be an average value to keep
       // altitude
@@ -92,7 +149,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     } else if (setpoint.Aux[0] > 0.9 && setpoint.Aux[1] < 0.1) {
       flyStereo_running_ = false;
       flyStereo_streaming_data_ = false;
-      redis_interface_->SendStopCommand();
+      // redis_interface_->SendStopCommand();
 
       // Reset the filters in the Position controller
       position_controller_.ResetController();
@@ -210,20 +267,22 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   /************************************************************************
    *                  Send Commands to ESCs                         *
    ************************************************************************/
-  if (!is_debug_mode_) {
+  if constexpr (!kDEBUG_MODE) {
     pru_client_.send_data(u);
   }
 
   /************************************************************************
    *             Check the kill Switch and Shutdown if set               *
    ************************************************************************/
-  if (setpoint.kill_switch < 0.5 && !is_debug_mode_) {
-    spdlog::info("\nKill Switch Hit! Shutting Down\n");
-    rc_set_state(EXITING);
+  if constexpr (!kDEBUG_MODE) {
+    if (setpoint.kill_switch < 0.5) {
+      spdlog::info("\nKill Switch Hit! Shutting Down\n");
+      rc_set_state(EXITING);
+    }
   }
 
   // Print some stuff to the console in debug mode
-  if (is_debug_mode_) {
+  if constexpr (kDEBUG_MODE) {
     console_print(imu_data_body, setpoint, u);
   }
   /************************************************************************
@@ -297,7 +356,7 @@ void FlightCore::init_logging(const std::string &log_location) {
   // Initialize spdlog
   std::vector<spdlog::sink_ptr> sinks;
   // Only use the console sink if we are in debug mode
-  if (is_debug_mode_) {
+  if constexpr (kDEBUG_MODE) {
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
   }
   int max_bytes = 1048576 * 20;  // Max 20 MB
@@ -314,62 +373,6 @@ void FlightCore::init_logging(const std::string &log_location) {
 
   // Initialize Ulog
   ulog_.init(log_dir);
-}
-
-int FlightCore::init() {
-  // Create a file for logging and initialize our file logger
-  init_logging(log_filepath_);
-
-  // TODO: improve the logic to decide whether to initialize the object or not
-  if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
-    redis_interface_ = std::make_unique<RedisInterface>("FlyStereoData", 1);
-  }
-
-  if (config_params_["enable_gps"].as<bool>()) {
-    gps_module_.init();
-  }
-
-  // Initialize the remote controller through the setpoint object
-  setpoint_module_.init();
-
-  // Blocks execution until a packet is received
-  if (!is_debug_mode_) {
-    setpoint_module_.wait_for_data_packet();
-  }
-
-  // Tell the system that we are running if we are in the predicted UNINITIALIZED state. Else shutdown
-  if (rc_get_state() == UNINITIALIZED) {
-    rc_set_state(RUNNING);
-  } else {
-    rc_set_state(EXITING);
-  }
-
-  // Generate the PID controllers and low-pass filters
-  YAML::Node controller = config_params_["controller"];
-  YAML::Node filters = config_params_["filters"];
-  double pid_lpf_const = controller["pid_LPF_const_sec"].as<double>();
-  roll_inner_PID_ = generate_pid(controller["roll_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
-  roll_outer_PID_ = generate_pid(controller["roll_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
-  pitch_outer_PID_ =
-      generate_pid(controller["pitch_PID_outer"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
-  pitch_inner_PID_ =
-      generate_pid(controller["pitch_PID_inner"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
-  yaw_PID_ = generate_pid(controller["yaw_PID"].as<std::array<double, 3>>(), pid_lpf_const, LOOP_DELTA_T);
-
-  auto lpf_num = filters["imu_lpf_num"].as<std::vector<double>>();
-  auto lpf_den = filters["imu_lpf_den"].as<std::vector<double>>();
-  gyro_lpf_roll_ = DigitalFilter(lpf_num, lpf_den);
-  gyro_lpf_pitch_ = DigitalFilter(lpf_num, lpf_den);
-  gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
-
-  // Initialize the client to connect to the PRU handler
-  pru_client_.init();
-
-  // Start the flight program
-  std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
-  imu_module_.init(config_params_["imu_params"], func);
-
-  return 0;
 }
 
 }  // namespace flyMS

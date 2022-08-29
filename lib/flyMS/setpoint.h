@@ -40,17 +40,17 @@ struct SetpointData {
  */
 class Setpoint {
  public:
+  // TODO move is_debug_mode to a compile time constant
   /**
    * @brief Construct a new Setpoint object
    *
-   * @param is_debug_mode Flag indicating debug mode
    * @param flight_mode  flight mode: stabilized or acro
    * @param max_setpts_stabilized max setpoints for stabilized mode (in RPW rad, rad, rad/s)
    * @param max_setpts_acro max setpoints for acro mode (in RPW rad/s, rad/s, rad/s)
    * @param throttle_limits The min (index 0) and max (index 1) throttle values between 0-1
    */
-  Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
-           std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits);
+  Setpoint(FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized, std::array<float, 3> max_setpts_acro,
+           std::array<float, 2> throttle_limits);
 
   /**
    * @brief Construct a new Setpoint object using a yaml node. The node must have all the parameters needed in the main

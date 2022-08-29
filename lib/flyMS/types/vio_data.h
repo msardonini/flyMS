@@ -3,7 +3,9 @@
 #include "Eigen/Dense"
 
 struct VioData {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  VioData()
+      : position(Eigen::Vector3f::Zero()), velocity(Eigen::Vector3f::Zero()), quat(Eigen::Quaternionf::Identity()) {}
+
   Eigen::Vector3f position;
   Eigen::Vector3f velocity;
   Eigen::Quaternionf quat;

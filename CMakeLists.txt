@@ -2,6 +2,9 @@ cmake_policy(SET CMP0048 NEW)
 project(flyMS LANGUAGES CXX C VERSION 0.1.0)
 cmake_minimum_required(VERSION 3.5)
 
+# Add cmake subdirectory to the CMAKE_MODULE_PATH so that we can find dependencies
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 # # Get the architecture of the CPU building this
 EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
 string(COMPARE EQUAL "${ARCHITECTURE}" x86_64 host64bit)
@@ -36,3 +39,5 @@ add_subdirectory(external)
 add_subdirectory(lib)
 
 add_subdirectory(app)
+
+add_subdirectory(docs)

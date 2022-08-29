@@ -11,7 +11,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "flyMS/imu/Imu.h"
+#include "flyMS/debug_mode.hpp"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 
@@ -21,11 +21,10 @@ static constexpr uint32_t SETPOINT_LOOP_FRQ = 40;
 static constexpr uint32_t SETPOINT_LOOP_SLEEP_TIME_US = 1E6 / 40;
 static constexpr float DEADZONE_THRESH = 0.05f;
 
-Setpoint::Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
+Setpoint::Setpoint(FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
                    std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits)
     : is_running_(false),
       has_received_data_(false),
-      is_debug_mode_(is_debug_mode),
       flight_mode_(flight_mode),
       max_setpoints_stabilized_(max_setpts_stabilized),
       max_setpoints_acro_(max_setpts_acro),
@@ -42,8 +41,7 @@ Setpoint::Setpoint(bool is_debug_mode, FlightMode flight_mode, std::array<float,
 }
 
 Setpoint::Setpoint(const YAML::Node& config_params)
-    : Setpoint(config_params["debug_mode"].as<bool>(),
-               static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>()),
+    : Setpoint(static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>()),
                config_params["setpoint"]["max_setpoints_stabilized"].as<std::array<float, 3>>(),
                config_params["setpoint"]["max_setpoints_acro"].as<std::array<float, 3>>(),
                config_params["setpoint"]["throttle_limits"].as<std::array<float, 2>>()) {}
@@ -127,7 +125,7 @@ void Setpoint::setpoint_manager() {
         has_received_data_.store(true);
       }
     } else {
-      if (!is_debug_mode_) {
+      if constexpr (!kDEBUG_MODE) {
         // check to make sure too much time hasn't gone by since hearing the RC
         dsm2_timeout_counter++;
         if (dsm2_timeout_counter > 2 * SETPOINT_LOOP_FRQ) {  // If packet hasn't been received for 2 seconds

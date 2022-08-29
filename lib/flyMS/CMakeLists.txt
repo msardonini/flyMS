@@ -5,6 +5,7 @@ add_definitions(-DDEBUG)
 
 #Build flyMS
 add_library(flyMS STATIC
+  RedisInterface.cc
   DigitalFilter.cc
   FlightCore.cc
   config_requestor.cc
