@@ -24,4 +24,6 @@
    :members:
 .. doxygenclass:: flyMS::Setpoint
    :members:
+.. doxygenclass:: flyMS::PositionController
+   :members:
 ```

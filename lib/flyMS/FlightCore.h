@@ -57,6 +57,8 @@ class FlightCore {
    */
   FlightCore(const YAML::Node &input_params);
 
+  FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params);
+
   // TODO: add a non-yaml constructor
   ~FlightCore() = default;
   FlightCore() = delete;

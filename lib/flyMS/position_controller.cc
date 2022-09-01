@@ -7,24 +7,11 @@
 
 namespace flyMS {
 
-PositionController::PositionController(const YAML::Node &config_params) {
-  YAML::Node position_controller = config_params["position_controller"];
-  std::array<std::array<double, 3>, 2> pid_coeffs_x;
-  std::array<std::array<double, 3>, 2> pid_coeffs_y;
-  std::array<std::array<double, 3>, 2> pid_coeffs_z;
-
-  pid_coeffs_x[0] = position_controller["pid_coeffs_x_outer"].as<std::array<double, 3> >();
-  pid_coeffs_x[1] = position_controller["pid_coeffs_x_inner"].as<std::array<double, 3> >();
-  pid_coeffs_y[0] = position_controller["pid_coeffs_y_outer"].as<std::array<double, 3> >();
-  pid_coeffs_y[1] = position_controller["pid_coeffs_y_inner"].as<std::array<double, 3> >();
-  pid_coeffs_z[0] = position_controller["pid_coeffs_z_outer"].as<std::array<double, 3> >();
-  pid_coeffs_z[1] = position_controller["pid_coeffs_z_inner"].as<std::array<double, 3> >();
-
-  // Roll, pitch, and yaw output saturdation limits
-  RPY_saturation_limits_ = position_controller["RPY_saturation_limits"].as<std::array<float, 3> >();
-
+PositionController::PositionController(std::array<std::array<double, 3>, 2> pid_coeffs_x,
+                                       std::array<std::array<double, 3>, 2> pid_coeffs_y,
+                                       std::array<std::array<double, 3>, 2> pid_coeffs_z,
+                                       std::array<float, 3> RPY_saturation_limits) {
   for (int i = 0; i < 2; i++) {
-    // pid_[0][i] = generatePID(pid_coeffs_x_[i][0], pid_coeffs_x_[i][1], pid_coeffs_x_[i][2], 0.15, LOOP_DELTA_T);
     pid_[0][i] = generate_pid(pid_coeffs_x[i], 0.15, LOOP_DELTA_T);
     pid_[0][i] = generate_pid(pid_coeffs_y[i], 0.15, LOOP_DELTA_T);
     pid_[0][i] = generate_pid(pid_coeffs_z[i], 0.15, LOOP_DELTA_T);
@@ -39,9 +26,18 @@ PositionController::PositionController(const YAML::Node &config_params) {
   setpoint_orientation_ = Eigen::Vector3f::Zero();
 }
 
+PositionController::PositionController(const YAML::Node &config_params)
+    : PositionController({config_params["pid_coeffs_x_outer"].as<std::array<double, 3>>(),
+                          config_params["pid_coeffs_x_inner"].as<std::array<double, 3>>()},
+                         {config_params["pid_coeffs_y_outer"].as<std::array<double, 3>>(),
+                          config_params["pid_coeffs_y_inner"].as<std::array<double, 3>>()},
+                         {config_params["pid_coeffs_z_outer"].as<std::array<double, 3>>(),
+                          config_params["pid_coeffs_z_inner"].as<std::array<double, 3>>()},
+                         config_params["RPY_saturation_limits"].as<std::array<float, 3>>()) {}
+
 PositionController::~PositionController() {}
 
-int PositionController::ReceiveVio(const VioData &vio) {
+void PositionController::ReceiveVio(const VioData &vio) {
   Eigen::Vector3f setpoint_orientation_xyz;
   // Calculate the PIDs for the outer and inner loops on XYZ axis
   for (int i = 0; i < 3; i++) {
@@ -50,7 +46,7 @@ int PositionController::ReceiveVio(const VioData &vio) {
   }
 
   // lock the mutex to protect our output variable
-  std::lock_guard<std::mutex> lock(output_mutex_);
+  std::lock_guard<std::mutex> lock(*output_mutex_);
 
   // Account for the change in orientation of the aircraft during its flight
   setpoint_orientation_xyz = vio.quat.inverse() * setpoint_orientation_xyz;
@@ -68,22 +64,20 @@ int PositionController::ReceiveVio(const VioData &vio) {
   Eigen::Matrix3f rotation_mat = vio.quat.toRotationMatrix();
   const float pitch = -asin(rotation_mat(2, 0));
   yaw_ = atan2(rotation_mat(1, 0) / cos(pitch), rotation_mat(0, 0) / cos(pitch));
-  return 0;
 }
 
-int PositionController::GetSetpoint(Eigen::Vector3f &setpoint_orientation, float &yaw) {
-  std::lock_guard<std::mutex> lock(output_mutex_);
-  setpoint_orientation = setpoint_orientation_;
-  yaw = yaw_;
-  return 0;
+std::tuple<Eigen::Vector3f, float> PositionController::GetSetpoint() const {
+  std::lock_guard<std::mutex> lock(*output_mutex_);
+  return std::make_tuple(setpoint_orientation_, yaw_);
 }
 
-int PositionController::SetReferencePosition(const Eigen::Vector3f &position) {
+void PositionController::SetReferencePosition(const Eigen::Vector3f &position) {
+  std::lock_guard<std::mutex> lock(*output_mutex_);
   setpoint_position_ = position;
-  return 0;
 }
 
 void PositionController::ResetController() {
+  std::lock_guard<std::mutex> lock(*output_mutex_);
   setpoint_position_ = Eigen::Vector3f::Zero();
   setpoint_velocity_ = Eigen::Vector3f::Zero();
   setpoint_orientation_ = Eigen::Vector3f::Zero();

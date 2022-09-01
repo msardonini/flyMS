@@ -23,7 +23,8 @@ static constexpr float DEADZONE_THRESH = 0.05f;
 
 Setpoint::Setpoint(FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized,
                    std::array<float, 3> max_setpts_acro, std::array<float, 2> throttle_limits)
-    : is_running_(false),
+    : setpoint_mutex_(std::make_unique<std::mutex>()),
+      is_running_(false),
       has_received_data_(false),
       flight_mode_(flight_mode),
       max_setpoints_stabilized_(max_setpts_stabilized),
@@ -45,6 +46,23 @@ Setpoint::Setpoint(const YAML::Node& config_params)
                config_params["setpoint"]["max_setpoints_stabilized"].as<std::array<float, 3>>(),
                config_params["setpoint"]["max_setpoints_acro"].as<std::array<float, 3>>(),
                config_params["setpoint"]["throttle_limits"].as<std::array<float, 2>>()) {}
+
+Setpoint::Setpoint(Setpoint&& setpoint)
+    : setpoint_thread_(std::move(setpoint.setpoint_thread_)),
+      setpoint_mutex_(std::move(setpoint.setpoint_mutex_)),
+      setpoint_data_(std::move(setpoint.setpoint_data_)),
+      is_running_(setpoint.is_running_.load()),
+      has_received_data_(setpoint.has_received_data_.load()),
+      flight_mode_(setpoint.flight_mode_),
+      max_setpoints_stabilized_(setpoint.max_setpoints_stabilized_),
+      max_setpoints_acro_(setpoint.max_setpoints_acro_),
+      throttle_limits_(setpoint.throttle_limits_) {}
+
+Setpoint& Setpoint::operator=(Setpoint&& setpoint) {
+  Setpoint tmp(std::move(setpoint));
+  std::swap(tmp, *this);
+  return *this;
+}
 
 Setpoint::~Setpoint() {
   rc_dsm_cleanup();
@@ -72,7 +90,7 @@ void Setpoint::wait_for_data_packet() {
 
 // Gets the data from the local thread. Returns zero if no new data is available
 SetpointData Setpoint::get_setpoint_data() {
-  std::lock_guard<std::mutex> lock(setpoint_mutex_);
+  std::lock_guard<std::mutex> lock(*setpoint_mutex_);
   return setpoint_data_;
 }
 
@@ -80,7 +98,7 @@ void Setpoint::setpoint_manager() {
   uint32_t dsm2_timeout_counter = 0;
   while (is_running_.load()) {
     if (rc_dsm_is_new_data()) {
-      std::lock_guard<std::mutex> lock(setpoint_mutex_);
+      std::lock_guard<std::mutex> lock(*setpoint_mutex_);
 
       // Set roll/pitch reference value
       // DSM2 Receiver is inherently positive to the left

@@ -60,11 +60,28 @@ class Setpoint {
    */
   Setpoint(const YAML::Node& config_params);
 
-  // Default Destructor
+  /**
+   * @brief Destroy the Setpoint object
+   *
+   */
   ~Setpoint();
 
-  // Forbid c'tors we do not want
   Setpoint() = delete;
+
+  /**
+   * @brief Construct a new Setpoint object using the move constructor
+   *
+   */
+  Setpoint(Setpoint&&);
+
+  /**
+   * @brief Construct a new Setpoint object using the move assignment operator
+   *
+   * @return Setpoint&
+   */
+  Setpoint& operator=(Setpoint&&);
+
+  // The setpoint object 'owns' communication with hardware so it is not copyable
   Setpoint(const Setpoint&) = delete;
   Setpoint& operator=(const Setpoint&) = delete;
 
@@ -109,15 +126,14 @@ class Setpoint {
    */
   void setpoint_manager();
 
-  std::thread setpoint_thread_;  //< Thread that reads dsm2 UART
-  std::mutex setpoint_mutex_;    //< Mutex that protects setpoint_data_
-  SetpointData setpoint_data_;   //< Data to be shared with the user when called
+  std::thread setpoint_thread_;                 //< Thread that reads dsm2 UART
+  std::unique_ptr<std::mutex> setpoint_mutex_;  //< Mutex that protects setpoint_data_
+  SetpointData setpoint_data_;                  //< Data to be shared with the user when called
 
   std::atomic<bool> is_running_;         //< Flag to indicate if the object is running vs shutting down
   std::atomic<bool> has_received_data_;  //< True if any dsm packet has been received
 
   // All configurable parameters
-  bool is_debug_mode_;                             //< is running in debug mode
   FlightMode flight_mode_;                         //< The flight mode
   std::array<float, 3> max_setpoints_stabilized_;  //< Max orientation commands in [rad, rad, rad/s]
   std::array<float, 3> max_setpoints_acro_;        //< Max orientation commands in acro mode [rad/s, rad/s, rad/s]

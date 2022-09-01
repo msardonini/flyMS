@@ -32,11 +32,11 @@ void FlightCore::zero_pids() {
   yaw_PID_.zero_values();
 }
 
-FlightCore::FlightCore(const YAML::Node &config_params)
+FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params)
     : imu_module_(Imu::getInstance()),
       ulog_(),
-      setpoint_module_(config_params),
-      position_controller_(config_params),
+      setpoint_module_(std::move(setpoint)),
+      position_controller_(std::move(position_controller)),
       gps_module_(),
       config_params_(config_params) {
   flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
@@ -45,6 +45,9 @@ FlightCore::FlightCore(const YAML::Node &config_params)
   YAML::Node controller = config_params["controller"];
   max_control_effort_ = controller["max_control_effort"].as<std::array<float, 3>>();
 }
+
+FlightCore::FlightCore(const YAML::Node &config_params)
+    : FlightCore(Setpoint(config_params), PositionController(config_params), config_params) {}
 
 int FlightCore::init() {
   // Create a file for logging and initialize our file logger
@@ -115,7 +118,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     if (is_valid) {
       spdlog::warn("vio x: {}, vio y: {}", vio.position[0], vio.position[1]);
       position_controller_.ReceiveVio(vio);
-      position_controller_.GetSetpoint(setpoint_orientation, vio_yaw);
+      std::tie(setpoint_orientation, vio_yaw) = position_controller_.GetSetpoint();
 
       float log_setpoint[4] = {setpoint_orientation(0), setpoint_orientation(1), vio_yaw, setpoint_orientation(2)};
       float quat_setpoint[4] = {vio.quat.w(), vio.quat.x(), vio.quat.y(), vio.quat.z()};
