@@ -9,7 +9,8 @@ jobs:
       # you must check out the repository
       - name: Checkout
         uses: actions/checkout@v3
-          submodules: 'recursive'
+          with:
+            submodules: 'recursive'
       - name: Hello world action step
         uses: ./ # Uses an action in the root directory
         id: hello
