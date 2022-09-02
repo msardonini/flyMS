@@ -26,3 +26,8 @@ RUN pip3 install --upgrade pip && pip3 install sphinx_rtd_theme breathe myst_par
 # RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
 # USER $UNAME
 # CMD /bin/bash
+
+
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT [ "entrypoint.sh" ]

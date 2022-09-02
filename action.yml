@@ -13,5 +13,4 @@ runs:
   using: 'docker'
   image: 'docker/Dockerfile'
   args:
-    - ls .
-    # - ${{ inputs.who-to-greet }}
+    - ${{ inputs.who-to-greet }}

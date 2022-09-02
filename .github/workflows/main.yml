@@ -13,8 +13,8 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: hello
         with:
-          who-to-greet: 'ls .'
-          # who-to-greet: 'mkdir /github/workspace/build && cmake -D CMAKE_BUILD_TYPE=Release -S /github/workspace -B /github/workspace/build && make -j4 -C /github/workspace/build'
+          # who-to-greet: 'ls .'
+          who-to-greet: 'mkdir /github/workspace/build && cmake -D CMAKE_BUILD_TYPE=Release -S /github/workspace -B /github/workspace/build && make -j4 -C /github/workspace/build'
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
