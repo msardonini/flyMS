@@ -19,3 +19,6 @@
 [submodule "external/mavlink/mavlink_v2"]
 	path = external/mavlink/mavlink_v2
 	url = https://github.com/mavlink/c_library_v2.git
+[submodule "external/eigen"]
+	path = external/eigen
+	url = https://gitlab.com/libeigen/eigen.git
