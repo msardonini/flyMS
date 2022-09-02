@@ -30,4 +30,4 @@ RUN pip3 install --upgrade pip && pip3 install sphinx_rtd_theme breathe myst_par
 
 COPY entrypoint.sh /entrypoint.sh
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT [ "/entrypoint.sh" ]
