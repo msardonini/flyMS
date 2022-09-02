@@ -13,7 +13,7 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: hello
         with:
-          who-to-greet: 'bash -c "cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build'"
+          who-to-greet: 'bash -c \"cmake -D CMAKE_BUILD_TYPE=Release -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build'\"
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
