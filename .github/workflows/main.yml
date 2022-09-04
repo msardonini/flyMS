@@ -3,7 +3,7 @@ on: [push]
 jobs:
   flyMS_build_and_tests:
     runs-on: ubuntu-latest
-    name: FlyMS build and tests
+    name: flyMS build and tests
     steps:
       # To use this repository's private action,
       # you must check out the repository
@@ -13,9 +13,4 @@ jobs:
           submodules: 'recursive'
       - name: Build and test
         uses: ./.github/actions/ # Uses an action in this directory
-        id: hello
-        # with:
-        #   command: '--source-dir /github/workspace'
-      # Use the output from the `hello` step
-      # - name: Get the output time
-      #   run: echo "The time was ${{ steps.hello.outputs.time }}"
+        id: flyMS Docker Environment
