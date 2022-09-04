@@ -12,10 +12,10 @@ jobs:
         with:
           submodules: 'recursive'
       - name: Build and test
-        uses: ./ # Uses an action in the root directory
+        uses: .github/actions/ # Uses an action in the root directory
         id: hello
-        with:
-          command: '--source-dir /github/workspace'
+        # with:
+        #   command: '--source-dir /github/workspace'
       # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+      # - name: Get the output time
+      #   run: echo "The time was ${{ steps.hello.outputs.time }}"

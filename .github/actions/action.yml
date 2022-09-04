@@ -1,19 +1,17 @@
 # action.yml
 name: 'flyMS Docker Environment'
 description: 'Runs a custom command in the docker container'
-inputs:
-  command:  # id of input
-    description: 'command to run in the docker container'
-    required: true
-    default: 'bash'
+# inputs:
+#   command:  # id of input
+#     description: 'command to run in the docker container'
+#     required: true
+#     default: 'bash'
 # outputs:
 #   time: # id of output
 #     description: 'The time we greeted you'
 runs:
   using: 'docker'
   image: 'docker/Dockerfile'
-  # args:
-  #   - ${{ inputs.command }}
   args:
     - --source-dir
     - /github/workspace
