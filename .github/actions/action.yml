@@ -1,5 +1,5 @@
 name: 'flyMS Docker Environment'
-description: 'Runs commands in the Dockerized flyMS build environment' '
+description: 'Runs commands in the Dockerized flyMS build environment'
 runs:
   using: 'docker'
   image: '../../docker/Dockerfile'
