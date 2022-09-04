@@ -12,6 +12,11 @@ function print_usage {
 }
 
 
+echo "args are $@"
+
+print_usage
+
+
 
 # Argument default values
 SOURCE_DIR=/opt
