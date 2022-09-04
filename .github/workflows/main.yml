@@ -13,4 +13,4 @@ jobs:
           submodules: 'recursive'
       - name: Build and test
         uses: ./.github/actions/ # Uses an action in this directory
-        id: flyMS Docker Environment
+        id: flyMS_Docker_Environment
