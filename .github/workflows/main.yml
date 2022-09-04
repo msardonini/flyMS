@@ -3,7 +3,7 @@ on: [push]
 jobs:
   flyMS_build_and_tests:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: FlyMS build and tests
     steps:
       # To use this repository's private action,
       # you must check out the repository
