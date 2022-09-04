@@ -11,7 +11,7 @@ description: 'Runs a custom command in the docker container'
 #     description: 'The time we greeted you'
 runs:
   using: 'docker'
-  image: 'docker/Dockerfile'
+  image: '../../docker/Dockerfile'
   args:
     - --source-dir
     - /github/workspace
