@@ -12,7 +12,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: Build and test
-        uses: .github/actions/ # Uses an action in the root directory
+        uses: ./.github/actions/ # Uses an action in the root directory
         id: hello
         # with:
         #   command: '--source-dir /github/workspace'
