@@ -7,8 +7,7 @@ BUILD_DEBUG_MODE=0
 
 function print_usage {
   echo "flyMS_build.sh"
-  echo "  Builds the flyMS flight program and dependencies on either a "
-  echo "  beaglebone or host x86_64 machine (requires cross compiler)"
+  echo "  Builds the flyMS flight program from a docker container"
   echo "Usage:"
   echo "  ./flyMS_build.sh [OPTIONS] "
   echo "    OPTIONS:"
@@ -35,12 +34,14 @@ function build_docker_image {
 
 function build_flyMS {
   if [ $BUILD_DEBUG_MODE -ne 0 ]; then
-    DEBUG_COMMAND="-D CMAKE_BUILD_TYPE=Debug "
+    DEBUG_COMMAND="-d "
   else
-    DEBUG_COMMAND="-D CMAKE_BUILD_TYPE=Release "
+    DEBUG_COMMAND=""
   fi
 
-  docker run -it -v `pwd`:/opt/builder flyms_builder:buster bash -c "cmake $DEBUG_COMMAND -S /opt/builder -B /opt/builder/build && make -j$('nproc') -C /opt/builder/build"
+  SOURCE_DIR=/opt/builder
+
+  docker run -it -v `pwd`:$SOURCE_DIR flyms_builder:buster --source-dir $SOURCE_DIR $DEBUG_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
@@ -67,6 +68,7 @@ CLEAN=0
 CONFIG_FILE=""
 ADDRESS=""
 BUILD_DOCKER_IMAGE=0
+BUILD_DEBUG_MODE=0
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
@@ -141,7 +143,7 @@ if [ $ARCH == "x86_64" ]; then
 elif [ $ARCH == "armv7l" ]; then
   DESTINATION="/home/debian"
 else
-    echo "Invalid CPU architecture!"
+    echo "Unsupported CPU architecture!"
     exit 1
 fi
 

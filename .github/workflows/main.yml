@@ -1,7 +1,7 @@
 on: [push]
 
 jobs:
-  hello_world_job:
+  flyMS_build_and_tests:
     runs-on: ubuntu-latest
     name: A job to say hello
     steps:
@@ -11,12 +11,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: Hello world action step
+      - name: Build and test
         uses: ./ # Uses an action in the root directory
         id: hello
         with:
-          # who-to-greet: 'ls .'
-          who-to-greet: 'mkdir /github/workspace/build && cmake -D CMAKE_BUILD_TYPE=Release -S /github/workspace -B /github/workspace/build && make -j4 -C /github/workspace/build'
+          command: 'source-dir ./ '
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
