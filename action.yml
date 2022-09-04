@@ -12,5 +12,8 @@ inputs:
 runs:
   using: 'docker'
   image: 'docker/Dockerfile'
+  # args:
+  #   - ${{ inputs.command }}
   args:
-    - ${{ inputs.command }}
+    - --source-dir
+    - /github/workspace
