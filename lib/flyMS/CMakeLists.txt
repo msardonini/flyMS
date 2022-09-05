@@ -45,4 +45,6 @@ install(TARGETS flyMS
   DESTINATION /usr/bin/)
 
 
-add_subdirectory(tests)
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif()

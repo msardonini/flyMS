@@ -4,8 +4,6 @@ add_executable(flyMS_tests
   ../DigitalFilter.cc
 )
 
-message(${PROJECT_SOURCE_DIR})
-
 target_include_directories(flyMS_tests
   PUBLIC
     ${PROJECT_SOURCE_DIR}/lib

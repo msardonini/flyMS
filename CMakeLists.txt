@@ -5,11 +5,16 @@ cmake_minimum_required(VERSION 3.5)
 # Add cmake subdirectory to the CMAKE_MODULE_PATH so that we can find dependencies
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+# Set options
+option(BUILD_TESTS "Build tests" OFF)
+option(CROSS_COMPILE "Cross compile" ON)
+
 # # Get the architecture of the CPU building this
 EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
 string(COMPARE EQUAL "${ARCHITECTURE}" x86_64 host64bit)
 
-if(host64bit)
+if(host64bit AND CROSS_COMPILE)
+  message(STATUS "Cross compiling for 32 bit ARMv7")
   # Set the location of the toolchain file if needed
   set(CMAKE_TOOLCHAIN_FILE
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake"
@@ -17,7 +22,9 @@ if(host64bit)
     "toolchain path" FORCE)
 
   message(STATUS "Cross compiling to ARM   ${CMAKE_TOOLCHAIN_FILE}")
-endif(host64bit)
+elseif (host64bit AND NOT CROSS_COMPILE)
+  message(STATUS "Building for x86_64")
+endif()
 
 # Set c++ standard
 set(CMAKE_CXX_STANDARD 20)

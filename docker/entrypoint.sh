@@ -11,20 +11,14 @@ function print_usage {
   echo "      -h                        Prints this help menu and exit"
 }
 
-
-echo "args are $@"
-
-print_usage
-
-
-
 # Argument default values
 SOURCE_DIR=/opt
 CMAKE_BUILD_TYPE=Release
+BUILD_AND_RUN_TESTS=0
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
-options=$(getopt -o dh --long source-dir: -- "$@")
+options=$(getopt -o dh --long source-dir: --long test -- "$@")
 [ $? -eq 0 ] || {
   echo "Incorrect options provided"
   exit 1
@@ -44,6 +38,9 @@ while true; do
     shift; # The arg is next in position args
     SOURCE_DIR=$1
     ;;
+  --test)
+    BUILD_AND_RUN_TESTS=1
+    ;;
   --)
     shift
     break
@@ -53,5 +50,12 @@ while true; do
 done
 
 
-cmake -S $SOURCE_DIR -B $SOURCE_DIR/build -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
-make -j$('nproc') -C $SOURCE_DIR/build
+if [ $BUILD_AND_RUN_TESTS -eq 1 ]; then
+  cmake -S $SOURCE_DIR -B $SOURCE_DIR/build_x86 -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -D BUILD_TESTS=ON -D CROSS_COMPILE=OFF
+  make -j$('nproc') -C $SOURCE_DIR/build_x86
+  $SOURCE_DIR/build_x86/bin/flyMS_tests
+
+else
+  cmake -S $SOURCE_DIR -B $SOURCE_DIR/build -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -D CMAKE_BUILD_TYPE=$CXX
+  make -j$('nproc') -C $SOURCE_DIR/build
+fi

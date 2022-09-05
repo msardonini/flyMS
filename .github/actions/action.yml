@@ -1,8 +1,15 @@
 name: 'flyMS Docker Environment'
 description: 'Runs commands in the Dockerized flyMS build environment'
+inputs:
+  build_and_run_unit_tests:
+    description: 'Build and run unit tests'
+    required: false
+    default: ''
+
 runs:
   using: 'docker'
   image: '../../docker/Dockerfile'
   args:
     - --source-dir
     - /github/workspace
+    - ${{ inputs.build_and_run_unit_tests }}

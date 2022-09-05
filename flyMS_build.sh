@@ -2,9 +2,6 @@
 
 # TODO: clean up other scripts in this directory
 
-BUILD_DEBUG_MODE=0
-
-
 function print_usage {
   echo "flyMS_build.sh"
   echo "  Builds the flyMS flight program from a docker container"
@@ -23,8 +20,10 @@ function print_usage {
 }
 
 function build_docker_image {
-  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` -t flyms_builder:buster --network=host ./docker
-
+  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target x86_builder -t flyms_builder_x86:buster \
+    --network=host ./docker
+  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target arm_builder -t flyms_builder:buster \
+    --network=host ./docker
 
   if [ $? -ne 0 ]; then
     echo "docker build failed! Exiting"
@@ -33,15 +32,16 @@ function build_docker_image {
 }
 
 function build_flyMS {
-  if [ $BUILD_DEBUG_MODE -ne 0 ]; then
-    DEBUG_COMMAND="-d "
+  if [ $BUILD_AND_RUN_TESTS_LOCALLY -ne 0 ]; then
+    TEST_COMMAND="--test"
+    BASE_DOCKER_IMAGE="flyms_builder_x86:buster"
   else
-    DEBUG_COMMAND=""
+    TEST_COMMAND=""
+    BASE_DOCKER_IMAGE="flyms_builder:buster"
   fi
-
   SOURCE_DIR=/opt/builder
 
-  docker run -it -v `pwd`:$SOURCE_DIR flyms_builder:buster --source-dir $SOURCE_DIR $DEBUG_COMMAND
+  docker run -it -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
@@ -68,11 +68,13 @@ CLEAN=0
 CONFIG_FILE=""
 ADDRESS=""
 BUILD_DOCKER_IMAGE=0
-BUILD_DEBUG_MODE=0
+DEBUG_COMMAND=""
+BUILD_AND_RUN_TESTS_LOCALLY=0
+BUILD_FOLDER="build"
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
-options=$(getopt -o cbhd --long address: --long config: -- "$@")
+options=$(getopt -o cbhd --long address: --long config: --long test -- "$@")
 [ $? -eq 0 ] || {
   echo "Incorrect options provided"
   exit 1
@@ -88,7 +90,7 @@ while true; do
     BUILD_DOCKER_IMAGE=1
     ;;
   -d)
-    BUILD_DEBUG_MODE=1
+    DEBUG_COMMAND="-d"
     ;;
   -h)
     # prints the help menu and exit
@@ -104,6 +106,11 @@ while true; do
     shift; # The arg is next in position args
     ADDRESS=$1
     ;;
+  --test)
+    # Compile for x86_64 architecture and run unit tests locally
+    BUILD_AND_RUN_TESTS_LOCALLY=1
+    BUILD_FOLDER="build_x86"
+    ;;
   --)
     shift
     break
@@ -117,37 +124,41 @@ if [ $BUILD_DOCKER_IMAGE -ne 0 ]; then
   build_docker_image
 fi
 
-# Delete the build folder if it exists and the user requested to clean
-[ "$CLEAN" -eq 1 ] && [ -d "build" ] && rm -rf build
+# Delete the build folder if it exists if the user requested to clean
+[ "$CLEAN" -eq 1 ] && [ -d $BUILD_FOLDER ] && rm -rf $BUILD_FOLDER
 # Make a build folder if not present
-[ ! -d "build" ] && mkdir build
+[ ! -d $BUILD_FOLDER ] && mkdir $BUILD_FOLDER
 
 
 build_flyMS
 
+# Determine if we should send the outputs to the beaglebone
+if [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
 
-# Make a folder to store things to send
-prep_output_folder $CONFIG_FILE
+  # Make a folder to store things to send
+  prep_output_folder $CONFIG_FILE
 
-# Determine if we are running on the embedded device or a host x86_64 machine
-ARCH="$(uname -m)"
-if [ $ARCH == "x86_64" ]; then
-  # insctructions for copying files over to the embedded device
-  if [ -z $ADDRESS ]; then
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    printf "${RED}Error!${NC} Provide beaglebone IP address to copy to device!\n"
-    exit 1
+  ARCH="$(uname -m)"
+  if [ $ARCH == "x86_64" ]; then
+    # insctructions for copying files over to the embedded device
+    if [ -z $ADDRESS ]; then
+      RED='\033[0;31m'
+      NC='\033[0m' # No Color
+      printf "${RED}Error!${NC} Provide beaglebone IP address to copy to device!\n"
+      exit 1
+    fi
+    DESTINATION="debian@$ADDRESS:/home/debian"
+  elif [ $ARCH == "armv7l" ]; then
+    DESTINATION="/home/debian"
+  else
+      echo "Unsupported CPU architecture!"
+      exit 1
   fi
-  DESTINATION="debian@$ADDRESS:/home/debian"
-elif [ $ARCH == "armv7l" ]; then
-  DESTINATION="/home/debian"
-else
-    echo "Unsupported CPU architecture!"
-    exit 1
+
+  # rsync the files over
+  rsync -auv --info=progress2 products/ debian@$ADDRESS:/home/debian/
+
+  rm_output_folder
+
 fi
 
-# rsync the files over
-rsync -auv --info=progress2 products/ debian@$ADDRESS:/home/debian/
-
-rm_output_folder
