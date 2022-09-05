@@ -11,11 +11,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: Build and run unit tests
-        uses: ./.github/actions/ # Uses an action in this directory
-        # id: flyMS_Docker_Environment
-        with:
-          build_and_run_unit_tests: '--test'
-      - name: Cross Compile
-        uses: ./.github/actions/
-        # id: flyMS_Docker_Environment
+      - run: ./flyMS_build.sh -b --test
+      - run: ./flyMS_build.sh -b
+      # - name: Build and run unit tests
+      #   uses: ./.github/actions/ # Uses an action in this directory
+      #   # id: flyMS_Docker_Environment
+      #   with:
+      #     build_and_run_unit_tests: '--test'
+      # - name: Cross Compile
+      #   uses: ./.github/actions/
+      #   # id: flyMS_Docker_Environment
