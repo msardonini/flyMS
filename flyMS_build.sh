@@ -41,7 +41,7 @@ function build_flyMS {
   fi
   SOURCE_DIR=/opt/builder
 
-  docker run -it -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
+  docker run -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
