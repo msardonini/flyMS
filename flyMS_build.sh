@@ -4,19 +4,23 @@
 
 function print_usage {
   echo "flyMS_build.sh"
-  echo "  Builds the flyMS flight program from a docker container"
+  echo "  Builds the flyMS flight program from a docker container. Build artifacts are placed in the local 'build'"
+  echo "  directory."
+  ehco ""
   echo "Usage:"
   echo "  ./flyMS_build.sh [OPTIONS] "
   echo "    OPTIONS:"
   echo "      -c                      Cleans the build directory before making again"
   echo "      -d                      Builds with debugging symbols on"
-  echo "      --address {address}     Specify the IP address of the beaglebone to"
-  echo "                              send outputs to. Required for cross compiling"
-  echo "      --config {config_file}  Path to a config file to use for flight. This "
-  echo "                              will overwrite an existing config file"
   echo "      -b                      Builds Docker Image for Build Environment. "
   echo "                              This needs to be run once before flyMS can be built"
   echo "      -h                      Prints this help menu and exits"
+  echo "      --test                  Builds and runs the unit tests. This option will build for x84_64"
+  echo "                              architecture and save the outputs in a local 'build_x86' directory"
+  echo "      --address {address}     Specify the IP address of the beaglebone to send outputs to."
+  echo "                              Outputs will be sent to: debian@<address>:/home/debian/bin/"
+  echo "      --config {config_file}  Path to a config file to use for flight. This "
+  echo "                              will overwrite an existing config file"
 }
 
 function build_docker_image {
@@ -130,10 +134,16 @@ fi
 [ ! -d $BUILD_FOLDER ] && mkdir $BUILD_FOLDER
 
 
+# Run the function for building flyMS
 build_flyMS
 
 # Determine if we should send the outputs to the beaglebone
-if [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
+if [ -n "$ADDRESS" ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
+
+  if [ -n "$ADDRESS "] && [ $BUILD_AND_RUN_TESTS_LOCALLY -ne 0 ]; then
+    echo "Error! Cannot send outputs to beaglebone when building for x86_64"
+    exit -1
+  fi
 
   # Make a folder to store things to send
   prep_output_folder $CONFIG_FILE
@@ -141,12 +151,6 @@ if [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
   ARCH="$(uname -m)"
   if [ $ARCH == "x86_64" ]; then
     # insctructions for copying files over to the embedded device
-    if [ -z $ADDRESS ]; then
-      RED='\033[0;31m'
-      NC='\033[0m' # No Color
-      printf "${RED}Error!${NC} Provide beaglebone IP address to copy to device!\n"
-      exit 1
-    fi
     DESTINATION="debian@$ADDRESS:/home/debian"
   elif [ $ARCH == "armv7l" ]; then
     DESTINATION="/home/debian"
