@@ -1,4 +1,4 @@
-name: Workflow for flyMS
+name: flyMS Build and Test
 
 on: [push]
 
@@ -18,9 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     name: flyMS build and tests
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       # To use this repository's private action,
       # you must check out the repository
@@ -30,24 +27,3 @@ jobs:
           submodules: 'recursive'
       - run: ./flyMS_build.sh -b --test
       - run: ./flyMS_build.sh -b
-
-      #Github pages
-      - name: Setup Pages
-        uses: actions/configure-pages@v2
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          # Upload from the sphinx directory
-          path: './build/docs/sphinx/'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
-
-      # - name: Build and run unit tests
-      #   uses: ./.github/actions/ # Uses an action in this directory
-      #   # id: flyMS_Docker_Environment
-      #   with:
-      #     build_and_run_unit_tests: '--test'
-      # - name: Cross Compile
-      #   uses: ./.github/actions/
-      #   # id: flyMS_Docker_Environment
