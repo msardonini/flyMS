@@ -2,17 +2,6 @@ name: flyMS Build and Test
 
 on: [push]
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   flyMS_build_and_tests:
     runs-on: ubuntu-latest
