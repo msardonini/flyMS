@@ -17,3 +17,8 @@ sudo pip3 install -r requirements.txt
 
 curl -fsSL get.docker.com -o get-docker.sh && sh get-docker.sh
 sudo usermod -aG docker debian
+
+
+# Enable high priority threads, which is used to get near real-time performance
+sudo echo "debian hard rtprio 99" >> /etc/security/limits.conf
+sudo echo "debian soft rtprio 99" >> /etc/security/limits.conf

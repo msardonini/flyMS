@@ -1,5 +1,3 @@
 # flyMS - Flight stack for Quadrotor Drone using Beaglebone Blue
 
-See the flyMS Documentation for the latest 
-Read more [here](./build_plane/docs/sphinx/index.html)
-
+See the [flyMS Documentation](https://msardonini.github.io/flyMS/) for the latest!

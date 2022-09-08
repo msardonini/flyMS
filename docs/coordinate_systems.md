@@ -7,7 +7,7 @@ configuration of each, and
 
 The body frame is centered at the center of mass of the quadcopter.
 
-* X point 'forward'
+* X points 'forward'
 * Y points 'right'
 * Z points 'up'
 
