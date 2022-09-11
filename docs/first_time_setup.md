@@ -64,7 +64,7 @@ debian@beaglebone:~$ sudo apt upgrade
 ```
 
 ## Build and Deploy
-Build and deploy flyMS to beagleboard. [See Build section](#Building-flyMS)
+Build and deploy flyMS to beagleboard. [See Build section](Building-flyMS)
 
 
 ## Install flyMS services:
