@@ -5,8 +5,9 @@
 
 introduction.md
 first_time_setup.md
-building.md
 coordinate_systems.md
+connection_guide.md
+building_flyMS.md
 flyMS_docs.md
 
 ```

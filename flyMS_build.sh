@@ -140,7 +140,7 @@ build_flyMS
 # Determine if we should send the outputs to the beaglebone
 if [ -n "$ADDRESS" ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
 
-  if [ -n "$ADDRESS "] && [ $BUILD_AND_RUN_TESTS_LOCALLY -ne 0 ]; then
+  if [ -n "$ADDRESS " ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -ne 0 ]; then
     echo "Error! Cannot send outputs to beaglebone when building for x86_64"
     exit -1
   fi

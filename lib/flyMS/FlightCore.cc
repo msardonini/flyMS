@@ -47,7 +47,7 @@ FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_contro
 }
 
 FlightCore::FlightCore(const YAML::Node &config_params)
-    : FlightCore(Setpoint(config_params), PositionController(config_params), config_params) {}
+    : FlightCore(Setpoint(config_params), PositionController(config_params["position_controller"]), config_params) {}
 
 int FlightCore::init() {
   // Create a file for logging and initialize our file logger
@@ -126,7 +126,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
       // Log the VIO Data
       ULogPosCntrlMsg vio_log_msg(imu_data_body.timestamp_us, vio.position.data(), vio.velocity.data(), quat_setpoint,
                                   log_setpoint);
-      ulog_.WriteFlightData<ULogPosCntrlMsg>(vio_log_msg, ULogPosCntrlMsg::ID());
+      ulog_.write_msg(vio_log_msg);
       flyStereo_streaming_data_ = true;
     }
   }
@@ -286,7 +286,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
 
   // Print some stuff to the console in debug mode
   if constexpr (kDEBUG_MODE) {
-    console_print(imu_data_body, setpoint, u);
+    // console_print(imu_data_body, setpoint, u);
   }
   /************************************************************************
    *             Check for GPS Data and Handle Accordingly               *
@@ -299,7 +299,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   struct ULogFlightMsg flight_msg {
     imu_data_body.timestamp_us, imu_data_body, setpoint, u, u_euler
   };
-  ulog_.WriteFlightData<struct ULogFlightMsg>(flight_msg, ULogFlightMsg::ID());
+  ulog_.write_msg(flight_msg);
 }
 
 int FlightCore::console_print(const StateData &imu_data_body, const SetpointData &setpoint,

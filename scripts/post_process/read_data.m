@@ -28,7 +28,7 @@ d_yaw_filt=nohup(:,10);
 
 accel(:,1)=nohup(:,11);
 accel(:,2)=nohup(:,12);
-accel(:,3)=nohup(:,13)
+accel(:,3)=nohup(:,13);
 
 wing1=nohup(:,14);
 wing2=nohup(:,15);
@@ -81,6 +81,7 @@ figure
 hold on
 plot(time(1:end-1), 1E6./diff(time))
 ylim([0 400])
+title('Inner loop control frequency')
 
 figure
 hold on

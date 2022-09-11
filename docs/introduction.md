@@ -5,6 +5,15 @@ flyMS is a flight stack used to control a quadrotor drone. It is run on a
 [RoboticsCape](https://www.newark.com/element14/bb-cape-robotics/robotics-cape-9-18-vdc/dp/95Y0637).
 The stack is written in C++, and is easy to read and modify.
 
+This project is good for general prototyping of technologies which use quadrotor drones as a vehicle. This can include:
+* Control strategies
+* Digital filter design
+* Autonomous navigation
+    * Visual-inertial odometry (VIO)
+    * Simultaneous localization and mapping (SLAM)
+* Collision avoidance systems
+* Route planning
+
 ## Communication with the Beaglebone
 
 For flashing software or accessing the [flyMS Webserver](#flyMS-Webserver), the network (usually WiFi) is used. For

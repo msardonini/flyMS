@@ -18,6 +18,16 @@
    :members:
 .. doxygenclass:: flyMS::DigitalFilter
    :members:
+.. doxygenclass:: flyMS::ULog
+   :members:
+.. doxygenclass:: flyMS::ULogMsg
+   :members:
+.. doxygenclass:: flyMS::ULogFlightMsgData
+   :members:
+.. doxygenclass:: flyMS::ULogGpsMsg
+   :members:
+.. doxygenclass:: flyMS::ULogPosCntrlMsg
+   :members:
 .. doxygenclass:: flyMS::MavlinkInterface
    :members:
 .. doxygenclass:: flyMS::RedisInterface
