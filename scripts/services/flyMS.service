@@ -1,12 +1,12 @@
 [Unit]
 Description=flyMS
-After=network.target robotcontrol.service pru_handler.service flyMS_webserver.service generic-board-startup.service
+After=network.target robotcontrol.service PruManager.service flyMS_webserver.service generic-board-startup.service
 
 [Service]
 User=debian
 Restart=always
 PIDFile=/var/run/flyMS.pid
-ExecStart=/home/debian/bin/flyMS_app
+ExecStart=/home/debian/bin/flyMS
 
 [Install]
 WantedBy=multi-user.target

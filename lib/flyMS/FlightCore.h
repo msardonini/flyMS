@@ -7,7 +7,8 @@
  */
 #pragma once
 
-// TODO Add back in docker
+// TODO let flyMS run as non-root and access the pru
+// https://unix.stackexchange.com/questions/475800/non-root-read-access-to-dev-mem-by-kmem-group-members-fails
 // TODO add file doxygen comments for all files
 // TODO add a rotation matrix config field to update with the webserver
 // TODO find any other config parameters that need to be adjustable via the web interface
@@ -30,11 +31,12 @@
 #include <vector>
 
 #include "flyMS/DigitalFilter.hpp"
-#include "flyMS/RedisInterface.h"
 #include "flyMS/gps.h"
 #include "flyMS/imu/Imu.h"
 #include "flyMS/position_generator.h"
+#include "flyMS/pru/PruRequester.h"
 #include "flyMS/pru_client.h"
+#include "flyMS/redis/MavlinkRedisSub.h"
 #include "flyMS/setpoint.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
@@ -118,14 +120,15 @@ class FlightCore {
   // and reset the integrators in the PID controllers
   int integrator_reset_ = 0;
 
-  Imu &imu_module_;           //< Reference to Imu singleton object and Data struct from the imu manager
-  ULog ulog_;                 //< Class to handle and write to the log file
-  PruClient pru_client_;      //< Object that communicates with the pru_handler process
-  Setpoint setpoint_module_;  //< Object and Data struct from the setpoint manager
-  std::unique_ptr<RedisInterface> redis_interface_;  //< Object to handle the I/O with redis
-  PositionController position_controller_;           //< Controller for position when flying using flySetero
-  gps gps_module_;                                   //< Data struct from the gps manager
-  GPS_data_t gps_;                                   //< GPS Manager
+  Imu &imu_module_;  //< Reference to Imu singleton object and Data struct from the imu manager
+  ULog ulog_;        //< Class to handle and write to the log file
+
+  Setpoint setpoint_module_;                             //< Object and Data struct from the setpoint manager
+  std::unique_ptr<MavlinkRedisSub> mavlink_subscriber_;  //< Object to handle the I/O with redis
+  PositionController position_controller_;               //< Controller for position when flying using flySetero
+  gps gps_module_;                                       //< Data struct from the gps manager
+  GPS_data_t gps_;                                       //< GPS Manager
+  PruRequester pru_requester_;                           //< Object to handle ownership of the PRU with the PruHandler
 
   DigitalFilter roll_inner_PID_;
   DigitalFilter roll_outer_PID_;

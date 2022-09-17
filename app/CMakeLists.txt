@@ -8,22 +8,23 @@ target_link_libraries(test_webserver
   yaml-cpp
 )
 
-# Build pru_handler app
-add_executable(pru_handler_app
-  pru_handler_app.cc
+# Build PruManager
+add_executable(PruManager
+  PruManager.cc
 )
-target_link_libraries(pru_handler_app
+target_link_libraries(PruManager
   PRIVATE
-    pru_handler
+    flyMS_lib
+    redis++_static
 )
 
-# Build flyMS_app
-add_executable(flyMS_app
-  flyMS_app.cc
+# Build flyMS
+add_executable(flyMS
+  flyMS.cc
 )
-target_link_libraries(flyMS_app
+target_link_libraries(flyMS
   PRIVATE
-    flyMS
+    flyMS_lib
 )
 
 add_executable(flyStereo_interface
@@ -31,11 +32,11 @@ add_executable(flyStereo_interface
 )
 target_link_libraries(flyStereo_interface
   PRIVATE
-    flyMS
+    flyMS_lib
     redis++_static
 )
 
-set_target_properties(flyMS_app test_webserver pru_handler_app flyStereo_interface
+set_target_properties(flyMS test_webserver PruManager flyStereo_interface
   PROPERTIES
   LINK_FLAGS "-static-libstdc++ -static-libgcc"
   # LINK_FLAGS "-static"

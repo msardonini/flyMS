@@ -14,6 +14,17 @@ This project is good for general prototyping of technologies which use quadrotor
 * Collision avoidance systems
 * Route planning
 
+## Required Hardware
+
+1. [Beaglebone Blue](https://beagleboard.org/blue), or Beaglebone Black equipped with the
+[RoboticsCape](https://www.newark.com/element14/bb-cape-robotics/robotics-cape-9-18-vdc/dp/95Y0637).
+2. A Linux PC
+3. A Spektrum Remote Controller (DX5+) with the
+[satellite receiver](https://www.spektrumrc.com/Products/Default.aspx?ProdID=SPM9645)
+4. Quadrotor hardware: Frame, Motors, ESCs, Battery
+5. (Optional) A smartphone, for rapid PID tuning during outdoor testing
+
+
 ## Communication with the Beaglebone
 
 For flashing software or accessing the [flyMS Webserver](#flyMS-Webserver), the network (usually WiFi) is used. For

@@ -24,15 +24,19 @@ function print_usage {
 }
 
 function build_docker_image {
-  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target x86_builder -t flyms_builder_x86:buster \
+  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target x86_runner -t flyms_builder_x86:buster \
     --network=host ./docker
-  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target arm_builder -t flyms_builder:buster \
+  docker build --build-arg UID=`id -u` --build-arg GID=`id -g` --target arm_runner -t flyms_builder:buster \
     --network=host ./docker
 
   if [ $? -ne 0 ]; then
     echo "docker build failed! Exiting"
     exit -1
   fi
+}
+
+function dev_flyMS {
+  docker run --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder:buster
 }
 
 function build_flyMS {
@@ -43,7 +47,7 @@ function build_flyMS {
     TEST_COMMAND=""
     BASE_DOCKER_IMAGE="flyms_builder:buster"
   fi
-  SOURCE_DIR=/opt/builder
+  SOURCE_DIR=/opt/flyMS
 
   docker run -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
@@ -78,7 +82,7 @@ BUILD_FOLDER="build"
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
-options=$(getopt -o cbhd --long address: --long config: --long test -- "$@")
+options=$(getopt -o cbhd --long address: --long config: --long test --long dev -- "$@")
 [ $? -eq 0 ] || {
   echo "Incorrect options provided"
   exit 1
@@ -114,6 +118,10 @@ while true; do
     # Compile for x86_64 architecture and run unit tests locally
     BUILD_AND_RUN_TESTS_LOCALLY=1
     BUILD_FOLDER="build_x86"
+    ;;
+  --dev)
+    dev_flyMS
+    exit 0
     ;;
   --)
     shift
@@ -163,6 +171,4 @@ if [ -n "$ADDRESS" ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
   rsync -auv --info=progress2 products/ debian@$ADDRESS:/home/debian/
 
   rm_output_folder
-
 fi
-

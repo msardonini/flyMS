@@ -3,15 +3,15 @@ cmake_minimum_required(VERSION 3.5)
 add_definitions(-DDEBUG)
 
 
-#Build flyMS
-add_library(flyMS STATIC
-  RedisInterface.cc
+#Build flyMS_lib
+add_library(flyMS_lib STATIC
+  redis/RedisSubscriber.cc
+  redis/MavlinkRedisSub.cc
   DigitalFilter.cc
   FlightCore.cc
   config_requestor.cc
   gps.cc
   imu/Imu.cc
-  pru_client.cc
   setpoint.cc
   position_controller.cc
   mavlink_interface.cc
@@ -19,7 +19,7 @@ add_library(flyMS STATIC
   ulog/ulog.cc
 )
 
-target_link_libraries(flyMS
+target_link_libraries(flyMS_lib
   PUBLIC
     spdlog
     robotics_cape
@@ -28,20 +28,21 @@ target_link_libraries(flyMS
     HTTPRequest
     mavlink_v2
     redis++_static
+    stdc++fs
 )
 
-target_include_directories(flyMS
+target_include_directories(flyMS_lib
   PUBLIC
     ${LIBRARY_ROOT}
 )
 
-target_compile_options(flyMS
+target_compile_options(flyMS_lib
   PUBLIC
     -Wall
     -Wno-address-of-packed-member
 )
 
-install(TARGETS flyMS
+install(TARGETS flyMS_lib
   DESTINATION /usr/bin/)
 
 
