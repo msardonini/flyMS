@@ -13,5 +13,5 @@ target_link_libraries(flyMS_tests
   PRIVATE
     gtest
     gtest_main
-    flyMS
+    flyMS_lib
 )
