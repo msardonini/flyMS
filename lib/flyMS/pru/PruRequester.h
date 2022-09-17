@@ -35,6 +35,17 @@ constexpr auto kPOLL_TIMEOUT =
  * - PruRequester::release_access() - Releases access to the PRU, notify the PruManager
  * - PruRequester::send_command() - Sends a command to the PRU
  *
+ *  Example usage is:
+ * ```
+ * {
+ *   PruRequester pru_requester;
+ *   if (pru_requester.request_access()) {
+ *     std::array<float, 4> motor_commands{0.0, 0.0, 0.0, 0.0};
+ *     pru_requester.send_command(motor_commands);
+ *   }
+ * } // release access to the PRU on destruction
+ * ```
+
  * The messages this object uses to communicate with the PruManager are defined in pru_messages.h
  */
 class PruRequester {

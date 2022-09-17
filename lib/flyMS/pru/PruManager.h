@@ -23,15 +23,27 @@ static const std::filesystem::path kPID_FILE_PRU(
     "/var/PruManager.pid");  //< PID file for PruManager, ensured only one instance is running
 
 /**
- * @brief Class to handle ownership of the Programmable Realtime Unit (PRU) and what is allowed to send commands to it.
- * The PRU is used to send commands to the Electronic Speed Controllers (ESCs), which control the motors.
+ * @brief Object to handle ownership of the Programmable Realtime Unit (PRU) and what is allowed to send commands to it.
+ * The PRU is used to send commands to the Electronic Speed Controllers (ESCs), which control the drone's motors.
  *
  * The PRU is primarily owned by this object, while it owns the PRU it commands zeros to the ESCs. This is because ESCs
  * will frequently complain if there is no signal sent to them.
  *
- * Other processes can request to use the PRU via PruRequster. This request is done via Redis publishers and subsribers.
- * If the PRU is not in use, the request is granted. If the PRU is in use, the request is denied. The object that owns
- * the PRU can return ownership to this object, which is done in the destructor of PruRequester.
+ * Other processes can request to use the PRU via PruRequster. This request is done via the PruRequester obect.
+ * Internally, Redis publishers and subscribers are used for communication. If the PRU is not in use, the request is
+ * granted. If the PRU is in use, the request is denied. The object that owns the PRU can return ownership to this
+ * object, which is done in the destructor of PruRequester.
+ *
+ * This object is supposed to be instanted in a daemon, and kept alive while hardware is running.
+ *
+ * Example usage is:
+ * ```
+ * PruManager pru_manager;  // Internals are all started in the constructor
+ * while (hardware_is_running) {
+ *   sleep(1);
+ * }
+ * ```
+
  */
 class PruManager {
  public:
