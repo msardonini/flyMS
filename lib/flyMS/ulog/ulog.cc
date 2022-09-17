@@ -177,11 +177,7 @@ void ULog::write_msg(const ULogMsg &data) {
   if (!is_running_) {
     throw std::runtime_error("ULog is not running. Call init() before write_flight_data()");
   }
-
   size_t write_size = sizeof(struct ulog_message_data_header_s) + data.get_msg_size();
-
-  std::cout << "data size " << data.get_msg_size() << std::endl;
-  std::cout << "size of data " << sizeof(ULogFlightMsg) << std::endl;
 
   // Populate the header
   ulog_message_header_s header;

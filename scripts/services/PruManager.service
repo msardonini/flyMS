@@ -1,13 +1,13 @@
 [Unit]
-Description=pru_handler
+Description=PruManager, owner and distriber of who gets access to use the PRU hardware
 Requires=systemd-modules-load.service
 After=network.target robotcontrol.service dbus-org.freedesktop.Avahi.service
 
 [Service]
 Type=simple
-PIDFile=/var/run/pru_handler.pid
+PIDFile=/var/PruManager.pid
 User=root
-ExecStart=/home/debian/bin/pru_handler_app
+ExecStart=/home/debian/bin/PruManager
 
 [Install]
 WantedBy=multi-user.target

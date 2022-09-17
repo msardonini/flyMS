@@ -1,8 +1,8 @@
 /**
  * @file redis_interface.h
  * @author Mike Sardonini
- * @brief Header file for the RedisInterface, an object which assists in inter-process communication for using Redis and
- * Mavlink Messages
+ * @brief Header file for the MavlinkRedisSub, an object which assists in inter-process communication for using Redis
+ * and Mavlink Messages
  *
  * @version 0.1
  * @date 2022-08-12
@@ -20,6 +20,7 @@
 #include <thread>
 
 #include "Eigen/Dense"
+#include "flyMS/redis/RedisSubscriber.h"
 #include "flyMS/types/vio_data.h"
 #include "mavlink_v2/common/mavlink.h"
 #include "redis++.h"
@@ -27,16 +28,11 @@
 
 namespace flyMS {
 
-constexpr char kRedisHost[] = "127.0.0.1";
-constexpr int kRedisPort = 6379;
-constexpr std::chrono::duration<int64_t> kRedisTimeout = std::chrono::seconds(1);
-
 /**
- * @brief Object to interface with Redis for flyMS. Mavlink encoded messages are received with a Redis subscriber,
- * which are then parsed and given to the user. Also, Mavlink messages can be sent with a Redis publisher.
+ * @brief
  *
  */
-class RedisInterface {
+class MavlinkRedisSub : public RedisSubscriber {
  public:
   /**
    * @brief Construct a new Redis Interface object
@@ -44,20 +40,13 @@ class RedisInterface {
    * @param max_queue_size The queue size of the Redis subscriber. If the queue is full, the subscriber will drop older
    * messages
    */
-  RedisInterface(std::size_t max_queue_size);
+  MavlinkRedisSub(std::size_t max_queue_size);
 
   /**
    * @brief Destroy the Redis Interface object
    *
    */
-  ~RedisInterface();
-
-  /**
-   * @brief Subscribe to a Redis channel
-   *
-   * @param channel The channel to subscribe to
-   */
-  void subscribe_to_channel(std::string_view channel);
+  ~MavlinkRedisSub();
 
   /**
    * @brief Gets the latest VioData message from the queue. If the queue is empty, it will return empty
@@ -88,20 +77,9 @@ class RedisInterface {
    */
   void MavlinkMessageCallback(std::string channel, std::string msg);
 
-  /**
-   * @brief Thread for the Redis subscriber. Runs in a loop until is_running_ is false
-   *
-   */
-  void subscribe_thread();
-
-  std::atomic<bool> is_running_{false};  //< Flag to indicate if the subscriber thread is running
-  std::thread subscribe_thread_;         //< Thread for the Redis subscriber
-  std::mutex queue_mutex_;               //< Mutex for the queue
-  std::size_t max_queue_size_;           //< The maximum queue size of the Redis subscriber
-  std::queue<VioData> queue_vio_data_;   //< Queue for the VioData messages
-
-  std::unique_ptr<sw::redis::Redis> redis_;     //< Redis Interface object
-  std::unique_ptr<sw::redis::Subscriber> sub_;  //< Redis subscriber object
+  std::mutex queue_mutex_;              //< Mutex for the queue
+  std::size_t max_queue_size_;          //< The maximum queue size of the Redis subscriber
+  std::queue<VioData> queue_vio_data_;  //< Queue for the VioData messages
 };
 
 }  // namespace flyMS

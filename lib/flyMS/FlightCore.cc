@@ -55,8 +55,8 @@ int FlightCore::init() {
 
   // TODO: improve the logic to decide whether to initialize the object or not
   if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
-    redis_interface_ = std::make_unique<RedisInterface>(1);  // max queue size of 1 (always take the latest)
-    redis_interface_->subscribe_to_channel("FlyStereoData");
+    mavlink_subscriber_ = std::make_unique<MavlinkRedisSub>(1);  // max queue size of 1 (always take the latest)
+    mavlink_subscriber_->subscribe_to_channel("FlyStereoData");
   }
 
   if (config_params_["enable_gps"].as<bool>()) {
@@ -96,8 +96,11 @@ int FlightCore::init() {
   gyro_lpf_pitch_ = DigitalFilter(lpf_num, lpf_den);
   gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
 
-  // Initialize the client to connect to the PRU handler
-  pru_client_.init();
+  // Request access to use the PRU, which we use to send commands to ESCs
+  if (!pru_requester_.request_access()) {
+    spdlog::error("Failed to get access to PRU");
+    return -1;
+  }
 
   // Start the flight program
   std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
@@ -111,9 +114,9 @@ void FlightCore::flight_core(StateData &imu_data_body) {
    *       Check the Mavlink Interface for New Visual Odometry Data
    ************************************************************************/
   Eigen::Vector3f setpoint_orientation;
-  if (redis_interface_) {
+  if (mavlink_subscriber_) {
     float vio_yaw;
-    auto [vio, is_valid] = redis_interface_->GetVioData();
+    auto [vio, is_valid] = mavlink_subscriber_->GetVioData();
 
     if (is_valid) {
       spdlog::warn("vio x: {}, vio y: {}", vio.position[0], vio.position[1]);
@@ -137,10 +140,10 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   auto setpoint = setpoint_module_.get_setpoint_data();
 
   // If we have commanded a switch in Aux, activate the perception system
-  if (redis_interface_) {
+  if (mavlink_subscriber_) {
     if (setpoint.Aux[0] < 0.1 && setpoint.Aux[1] > 0.9) {
       // Transition to start flyStereo
-      // redis_interface_->SendStartCommand();
+      // mavlink_subscriber_->SendStartCommand();
 
       // Assume that the current throttle value will be an average value to keep
       // altitude
@@ -152,7 +155,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     } else if (setpoint.Aux[0] > 0.9 && setpoint.Aux[1] < 0.1) {
       flyStereo_running_ = false;
       flyStereo_streaming_data_ = false;
-      // redis_interface_->SendStopCommand();
+      // mavlink_subscriber_->SendStopCommand();
 
       // Reset the filters in the Position controller
       position_controller_.ResetController();
@@ -271,7 +274,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
    *                  Send Commands to ESCs                         *
    ************************************************************************/
   if constexpr (!kDEBUG_MODE) {
-    pru_client_.send_data(u);
+    pru_requester_.send_command(u);
   }
 
   /************************************************************************

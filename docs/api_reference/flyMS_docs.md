@@ -11,7 +11,7 @@
    :members:
 .. doxygenclass:: flyMS::MavlinkInterface
    :members:
-.. doxygenclass:: flyMS::RedisInterface
+.. doxygenclass:: flyMS::RedisSubscriber
    :members:
 .. doxygenclass:: flyMS::Setpoint
    :members:

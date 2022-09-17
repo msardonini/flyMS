@@ -2,7 +2,7 @@
 
 sudo rm /etc/systemd/system/flyMS.service
 sudo rm /etc/systemd/system/flyMS_webserver.service
-sudo rm /etc/systemd/system/pru_handler.service
+sudo rm /etc/systemd/system/PruManager.service
 
 sudo systemctl disable flyMS
 sudo systemctl disable flyMS_webserver
