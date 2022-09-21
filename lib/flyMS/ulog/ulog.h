@@ -33,6 +33,7 @@
 #pragma once
 
 #include <atomic>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
 #include <queue>
@@ -42,140 +43,10 @@
 #include "flyMS/setpoint.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/types/vio_data.h"
+#include "flyMS/ulog/ulog_messages.h"
+#include "spdlog/fmt/fmt.h"
 
 namespace flyMS {
-
-/**
- * @brief Base class for all ULog data structs. This sets the interface for how ULog data is processed to store on disk
- *
- */
-struct ULogMsg {
-  virtual ~ULogMsg() = default;
-  virtual uint16_t get_msg_id() const = 0;
-  virtual std::size_t get_msg_size() const = 0;
-  virtual const void *get_msg_ptr() const = 0;
-};
-
-/**
- * @brief Data struct for storing metrics that are used to evaluate the performance of the flight controller. This
- * includes the system's state, sensor data, setpoints, and control effort (motor commands) This struct inherits from
- * ULogMsg and is used to write to the ULog file
- */
-struct ULogFlightMsg : public ULogMsg {
-  ULogFlightMsg() = default;
-
-  ULogFlightMsg(uint64_t timestamp_us, const StateData &state, const SetpointData &setpoint,
-                const std::array<float, 4> &u, const std::array<float, 3> u_euler)
-      : data(timestamp_us, state, setpoint, u, u_euler) {}
-
-  /**
-   * @brief The data fields that are recorded for the ULogFlightMsg. This struct is in serializable format
-   *
-   */
-  struct ULogFlightMsgData {
-    ULogFlightMsgData(uint64_t timestamp_us, const StateData &state, const SetpointData &setpoint,
-                      const std::array<float, 4> &u, const std::array<float, 3> u_euler)
-        : timestamp_us(timestamp_us),
-          RPY{state.euler(0), state.euler(1), state.euler(2)},
-          gyro{state.gyro(0), state.gyro(1), state.gyro(2)},
-          gyro_filt{state.eulerRate(0), state.eulerRate(1), state.eulerRate(2)},
-          accel{state.accel(0), state.accel(1), state.accel(2)},
-          motor_cmds{u[0], u[1], u[2], u[3]},
-          u{u_euler[0], u_euler[1], u_euler[2], setpoint.throttle},
-          RPY_ref{setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2]} {}
-
-    uint64_t timestamp_us;  //< Timestamp in microseconds
-    float RPY[3];           //< Roll, pitch, yaw in radians
-    float gyro[3];          //< Gyro measurements in rad/s
-    float gyro_filt[3];     //< Filtered gyro measurements in rad/s
-    float accel[3];         //< Accelerometer measurements in m/s^2
-    float motor_cmds[4];    //< Motor commands in [0, 1]
-    float u[4];             //< Control effort (throttle, roll, pitch, yaw) in [0, 1]
-    float RPY_ref[3];       //< Reference roll, pitch, yaw in radians
-  } __attribute__((packed));
-
-  ULogFlightMsgData data;  //< The data fields that are recorded for the ULogFlightMsg
-
-  static constexpr char FORMAT[] =
-      "flight:uint64_t timestamp;float[3] RPY;float[3] gyro;float[3] "
-      "gyro_filt;float[3] accel;float[4] motor_cmds;float[4] u;float[3] RPY_ref;";  //< The format string for
-                                                                                    // the ULogFlightMsg
-  static constexpr uint16_t ID = 0x0000;
-  virtual uint16_t get_msg_id() const override { return ID; }
-  virtual std::size_t get_msg_size() const override { return sizeof(data); }
-  virtual const void *get_msg_ptr() const override { return &data; }
-};
-
-/**
- * @brief Data struct for storing GPS data. This struct inherits from ULogMsg and is used to write to the ULog file.
- * It contains the recorded GPS LLA data
- *
- */
-struct ULogGpsMsg : public ULogMsg {
-  // Default Constructor
-  ULogGpsMsg() = default;
-
-  // Data Constructor
-  ULogGpsMsg(uint64_t timestamp_us, double LLA[3]) : data(timestamp_us, LLA) {}
-
-  struct ULogGpsMsgData {
-    ULogGpsMsgData(uint64_t _timestamp_us, double LLA[3]) : timestamp_us(_timestamp_us), LLA{LLA[0], LLA[1], LLA[2]} {}
-
-    uint64_t timestamp_us;
-    double LLA[3];
-  } __attribute__((packed));
-
-  ULogGpsMsgData data;
-
-  static constexpr char FORMAT[] = "gps:uint64_t timestamp;double[3] LLA;";
-  static constexpr uint16_t ID = 0x0001;
-
-  virtual uint16_t get_msg_id() const override { return ID; }
-  virtual std::size_t get_msg_size() const override { return sizeof(data); }
-  virtual const void *get_msg_ptr() const override { return &data; }
-};
-
-/**
- * @brief Data struct for storing the position and velocity of the vehicle. This struct inherits from ULogMsg and is
- * used to write to the ULog file. This struct is only used when the flyMS system is receiving position and velocity
- * data from an external source (e.g. VIO). It records here to show it's consistency with the rest of the flyMS data
- */
-struct ULogPosCntrlMsg : public ULogMsg {
-  ULogPosCntrlMsg(uint64_t _timestamp_us, float _position[3], float velocity[3], float quat[4], float command_RPWT[4])
-      : data(_timestamp_us, _position, velocity, quat, command_RPWT) {}
-
-  /**
-   * @brief The data fields that are recorded for the ULogPosCntrlMsg. This struct is in serializable format
-   *
-   */
-  struct ULogPosCntrlMsgData {
-    ULogPosCntrlMsgData(uint64_t timestamp_us, float position[3], float velocity[3], float quat[4],
-                        float command_RPWT[4])
-        : timestamp_us(timestamp_us),
-          position{position[0], position[1], position[2]},
-          velocity{velocity[0], velocity[1], velocity[2]},
-          quat{quat[0], quat[1], quat[2], quat[3]},
-          command_RPWT{command_RPWT[0], command_RPWT[1], command_RPWT[2], command_RPWT[3]} {}
-
-    uint64_t timestamp_us;  //< Timestamp in microseconds
-    float position[3];      //< Position in meters
-    float velocity[3];      //< Velocity in m/s
-    float quat[4];          //< Quaternion
-    float command_RPWT[4];  //< Commanded roll, pitch, yaw, throttle
-  } __attribute__((packed));
-
-  ULogPosCntrlMsgData data;  //< The data fields that are recorded for the ULogPosCntrlMsg
-
-  static constexpr char FORMAT[] =
-      "pos_cntrl:uint64_t timestamp;float[3] position;float[3] "
-      "velocity;float[4] quat;float[4] command;";  //< The format string for the ULogPosCntrlMsg
-  static constexpr uint16_t ID = 0x0002;           //< The ID of the ULogPosCntrlMsg
-
-  // Required overrides
-  virtual uint16_t get_msg_id() const override { return ID; }
-  virtual std::size_t get_msg_size() const override { return sizeof(data); }
-  virtual const void *get_msg_ptr() const override { return &data; }
-};
 
 /**
  * @brief Class to handle the logging of data to a file in the ULog data format
@@ -206,10 +77,10 @@ class ULog {
    * file, writes the header, and starts the logging thread. The created file is called logger.ulog, and it placed in
    * the directory provided
    *
-   * @param log_folder The directory to save the log in
+   * @param log_filename The name of the ULog file to create
    * @return int 0 if successful, -1 otherwise
    */
-  int init(const std::string &log_folder);
+  int init(const std::filesystem::path &log_folder);
 
   /**
    * @brief Writes a generic ULogMsg to the log file. It serializes the data, then adds it to a queue to be written to
@@ -218,6 +89,16 @@ class ULog {
    * @param data The ULogMsg to write to the file
    */
   void write_msg(const ULogMsg &data);
+
+  /**
+   * @brief Creates a directory for logging data for a given run. This is run with a very simple naming scheme, where
+   * the directory is named `run<number>`, where `<number>` is the first number that doesn't already exist. The date or
+   * time is not used because the hardware usually doesn't have a clock that is synchornized with local time
+   *
+   * @param log_folder The base folder to create the run directory in
+   * @return std::filesystem::path The path to the created directory
+   */
+  static std::filesystem::path generate_intremented_run_dir(const std::filesystem::path &log_folder);
 
  private:
   /**
@@ -238,7 +119,7 @@ class ULog {
    *
    * @param msg_format The message format to write in the header
    */
-  void write_formats(const std::string &msg_format);
+  void write_formats(std::string_view msg_format);
 
   /**
    * @brief Registers the Ulog message formats with a name and ID
@@ -246,7 +127,7 @@ class ULog {
    * @param id The ID of the message
    * @param msg_name The name of the message
    */
-  void write_add_log(uint16_t id, std::string msg_name);
+  void write_add_log(uint16_t id, std::string_view msg_name);
 
   /**
    * @brief Write bytes to the file
@@ -267,6 +148,9 @@ class ULog {
   std::mutex queue_mutex_;                                                         //< mutex for accessing the queue
   std::queue<std::pair<std::unique_ptr<const char[]>, std::size_t>> write_queue_;  //< queue for writing data
   std::ofstream fd_;  //< File descriptor for interfacing with the file
+  std::map<uint16_t, std::pair<const char *, const char *>>
+      msg_formats_;  //< Map of message formats for supported messages. Of the value pair, the first is the name of the
+                     // message, and the second is the format of the message
 };
 
 }  // namespace flyMS

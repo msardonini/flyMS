@@ -73,9 +73,10 @@ class FlightCore {
   /**
    * @brief Perform all initialization tasks and start threads
    *
-   * @return int
+   * @return true if initialization was successful
+   * @return false if initialization failed
    */
-  int init();
+  bool init();
 
  private:
   /**
@@ -98,7 +99,7 @@ class FlightCore {
    *
    * @param log_dir locaation to store log directories
    */
-  void init_logging(const std::string &log_location);
+  void init_logging(const std::filesystem::path &log_location);
 
   /**
    * @brief Debug function which writes system into to the console. Typically only called in debug mode

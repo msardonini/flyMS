@@ -20,7 +20,7 @@ This project is good for general prototyping of technologies which use quadrotor
 [RoboticsCape](https://www.newark.com/element14/bb-cape-robotics/robotics-cape-9-18-vdc/dp/95Y0637).
 2. A Linux PC
 3. A Spektrum Remote Controller (DX5+) with the
-[satellite receiver](https://www.spektrumrc.com/Products/Default.aspx?ProdID=SPM9645)
+[DSM Remote Receiver](https://www.spektrumrc.com/Products/Default.aspx?ProdID=SPM9645)
 4. Quadrotor hardware: Frame, Motors, ESCs, Battery
 5. (Optional) A smartphone, for rapid PID tuning during outdoor testing
 

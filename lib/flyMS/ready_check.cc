@@ -19,10 +19,10 @@ constexpr uint32_t MAX_TOGGLE_COUNT = 6;
 constexpr float SWITCH_THRESHOLD_VAL = 0.25f;  // dsm switch vals come in as floats. Need thresh to detect switches
 constexpr uint32_t SWITCH_CHANNEL = 5;
 
-int wait_for_start_signal() {
+bool wait_for_start_signal() {
   // Initialze the serial RC hardware
   if (rc_dsm_init()) {
-    return -1;
+    return false;
   }
 
   // Toggle the kill switch to get going, to ensure controlled take-off
@@ -75,13 +75,12 @@ int wait_for_start_signal() {
     rc_led_set(RC_LED_RED, 0);
   } else {
     spdlog::warn("Received shutdown signal during ready check!");
-    rc_led_set(RC_LED_GREEN, 0);
-    rc_led_set(RC_LED_RED, 1);
-    return -1;
+    rc_dsm_cleanup();
+    return false;
   }
 
   rc_dsm_cleanup();
-  return 0;
+  return true;
 }
 
 }  // namespace flyMS

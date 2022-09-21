@@ -49,7 +49,7 @@ FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_contro
 FlightCore::FlightCore(const YAML::Node &config_params)
     : FlightCore(Setpoint(config_params), PositionController(config_params["position_controller"]), config_params) {}
 
-int FlightCore::init() {
+bool FlightCore::init() {
   // Create a file for logging and initialize our file logger
   init_logging(log_filepath_);
 
@@ -99,14 +99,14 @@ int FlightCore::init() {
   // Request access to use the PRU, which we use to send commands to ESCs
   if (!pru_requester_.request_access()) {
     spdlog::error("Failed to get access to PRU");
-    return -1;
+    return false;
   }
 
   // Start the flight program
   std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
   imu_module_.init(config_params_["imu_params"], func);
 
-  return 0;
+  return true;
 }
 
 void FlightCore::flight_core(StateData &imu_data_body) {
@@ -341,23 +341,8 @@ int FlightCore::console_print(const StateData &imu_data_body, const SetpointData
   return 0;
 }
 
-void FlightCore::init_logging(const std::string &log_location) {
-  int run_number = 1;
-  std::stringstream run_str;
-  run_str << std::internal << std::setfill('0') << std::setw(3) << run_number;
-
-  std::string log_dir(log_location + std::string("/run") + run_str.str());
-
-  // Find the next run number folder that isn't in use
-  struct stat st = {0};
-  while (!stat(log_dir.c_str(), &st)) {
-    run_str.str(std::string());
-    run_str << std::internal << std::setfill('0') << std::setw(3) << ++run_number;
-    log_dir = (log_location + std::string("/run") + run_str.str());
-  }
-
-  // Make a new folder to hold the logged data
-  mkdir(log_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+void FlightCore::init_logging(const std::filesystem::path &log_location) {
+  auto log_dir = ULog::generate_intremented_run_dir(log_location);
 
   // Initialize spdlog
   std::vector<spdlog::sink_ptr> sinks;
@@ -368,17 +353,16 @@ void FlightCore::init_logging(const std::string &log_location) {
   int max_bytes = 1048576 * 20;  // Max 20 MB
   int max_files = 20;
   sinks.push_back(
-      std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_dir + "/console_log.txt", max_bytes, max_files));
+      std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_dir / "console_log.txt", max_bytes, max_files));
   auto flyMS_log = std::make_shared<spdlog::logger>("flyMS_log", std::begin(sinks), std::end(sinks));
 
   // Register loggers to be global logger
   flyMS_log->set_level(spdlog::level::trace);
   spdlog::register_logger(flyMS_log);
   spdlog::set_default_logger(flyMS_log);
-  flyMS_log->flush_on(spdlog::level::trace);  // TODO REMOVE
 
   // Initialize Ulog
-  ulog_.init(log_dir);
+  ulog_.init(log_dir / "logger.ulg");
 }
 
 }  // namespace flyMS

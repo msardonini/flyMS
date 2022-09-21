@@ -8,6 +8,7 @@
 introduction.md
 first_time_setup.md
 coordinate_systems.md
+process_diagram.md
 
 
 

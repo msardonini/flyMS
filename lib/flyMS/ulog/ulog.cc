@@ -1,19 +1,47 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2016 PX4 Development Team. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name PX4 nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
 #include "flyMS/ulog/ulog.h"
 
-// System Includes
-#include <fcntl.h>
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
+#include <cstdint>
 #include <iostream>
-#include <string>
+
+#include "spdlog/spdlog.h"
 
 namespace flyMS {
 
-namespace {
+constexpr std::size_t kMESSAGE_HEADER_LEN = 3;  //< accounts for msg_size and msg_type
 
+namespace {
 typedef enum class ULogMessageType {
   FORMAT = 'F',
   DATA = 'D',
@@ -34,7 +62,6 @@ struct ulog_file_header_s {
   uint64_t timestamp;
 } __attribute__((packed));
 
-#define ULOG_MSG_HEADER_LEN 3  // accounts for msg_size and msg_type
 struct ulog_message_header_s {
   uint16_t msg_size;
   uint8_t msg_type;
@@ -127,26 +154,45 @@ ULog::~ULog() {
   fd_.close();
 }
 
-int ULog::init(const std::string &log_folder) {
+std::filesystem::path ULog::generate_intremented_run_dir(const std::filesystem::path &log_folder) {
+  auto get_run_str = [](const int run_number) { return fmt::format("run{:03d}", run_number); };
+
+  int run_number = 1;
+  std::filesystem::path log_path = log_folder / get_run_str(run_number);
+  while (std::filesystem::exists(log_path)) {
+    log_path = log_folder / get_run_str(++run_number);
+  }
+  std::filesystem::create_directory(log_path);
+
+  return log_path;
+}
+
+int ULog::init(const std::filesystem::path &log_folder) {
   // Create the log file
-  fd_ = std::ofstream(log_folder + "/logger.ulg", std::ios::binary);
+  fd_ = std::ofstream(log_folder, std::ios::binary);
   if (!fd_.is_open()) {
-    std::cerr << "Error! Could not open file" << std::endl;
+    spdlog::error("Error! Could not open ULog file");
     return -1;
   }
 
   // Writes the header to the file
   write_header();
 
-  // Write the file formats to the beginning of the ulog file
-  write_formats(ULogFlightMsg::FORMAT);
-  write_formats(ULogGpsMsg::FORMAT);
-  write_formats(ULogPosCntrlMsg::FORMAT);
+  // Populate our supported messages map
+  msg_formats_.clear();
+  msg_formats_.insert(std::make_pair(ULogFlightMsg::ID, std::make_pair(ULogFlightMsg::NAME, ULogFlightMsg::FORMAT)));
+  msg_formats_.insert(std::make_pair(ULogGpsMsg::ID, std::make_pair(ULogGpsMsg::NAME, ULogGpsMsg::FORMAT)));
+  msg_formats_.insert(
+      std::make_pair(ULogPosCntrlMsg::ID, std::make_pair(ULogPosCntrlMsg::NAME, ULogPosCntrlMsg::FORMAT)));
 
-  // Give the Message Id's an associated name
-  write_add_log(ULogFlightMsg::ID, "flight");
-  write_add_log(ULogGpsMsg::ID, "gps");
-  write_add_log(ULogPosCntrlMsg::ID, "pos_cntrl");
+  // Write the file formats to the beginning of the ulog file so the parser knows the data types and formats
+  for (const auto &msg_format : msg_formats_) {
+    write_formats(msg_format.second.second);
+  }
+
+  for (const auto &msg_format : msg_formats_) {
+    write_add_log(msg_format.first, msg_format.second.first);
+  }
 
   // Start the write thread
   is_running_ = true;
@@ -175,13 +221,20 @@ void ULog::write_thread() {
 
 void ULog::write_msg(const ULogMsg &data) {
   if (!is_running_) {
-    throw std::runtime_error("ULog is not running. Call init() before write_flight_data()");
+    spdlog::error("ULog is not running. Call init() before write_flight_data(). Not Logging {} message",
+                  data.get_msg_name());
+    return;
   }
+  if (msg_formats_.find(data.get_msg_id()) == msg_formats_.end()) {
+    spdlog::error("ULog does not support {} message. Not Logging it", data.get_msg_name());
+    return;
+  }
+
   size_t write_size = sizeof(struct ulog_message_data_header_s) + data.get_msg_size();
 
   // Populate the header
   ulog_message_header_s header;
-  header.msg_size = write_size - ULOG_MSG_HEADER_LEN;
+  header.msg_size = write_size - kMESSAGE_HEADER_LEN;
 
   header.msg_type = (char)ULogMessageType::DATA;
 
@@ -200,36 +253,37 @@ void ULog::write_msg(const ULogMsg &data) {
   write_queue_.push(std::make_pair(std::move(buf), msg_size));
 }
 
-void ULog::write_add_log(uint16_t id, std::string msg_name) {
+void ULog::write_add_log(uint16_t id, std::string_view msg_name) {
   struct ulog_message_add_logged_s msg = {};
   size_t write_size = sizeof(struct ulog_message_add_logged_s) - sizeof(msg.message_name) + msg_name.size();
 
   // Populate the header
   ulog_message_header_s header;
-  header.msg_size = write_size - ULOG_MSG_HEADER_LEN;
+  header.msg_size = write_size - kMESSAGE_HEADER_LEN;
   header.msg_type = (char)ULogMessageType::ADD_LOGGED_MSG;
 
   // Populate the message
   msg.header = header;
   msg.multi_id = 0x00;
   msg.msg_id = id;
-  strcpy(msg.message_name, msg_name.c_str());
+
+  std::copy(msg_name.begin(), msg_name.end(), msg.message_name);
 
   write_to_file(&msg, write_size);
 }
 
-void ULog::write_formats(const std::string &msg_format) {
+void ULog::write_formats(std::string_view msg_format) {
   struct ulog_message_format_s msg;
   size_t write_size = sizeof(struct ulog_message_format_s) - sizeof(msg.format) + msg_format.size();
 
   // Populate the header
   ulog_message_header_s header;
-  header.msg_size = write_size - ULOG_MSG_HEADER_LEN;
+  header.msg_size = write_size - kMESSAGE_HEADER_LEN;
   header.msg_type = (char)ULogMessageType::FORMAT;
 
   // Populate the message
   msg.header = header;
-  strcpy(msg.format, msg_format.c_str());
+  std::copy(msg_format.begin(), msg_format.end(), msg.format);
 
   // Write the message to disk
   write_to_file(&msg, write_size);
@@ -251,7 +305,7 @@ void ULog::write_header() {
 
   // write the Flags message: this MUST be written right after the ulog header
   ulog_message_header_s header;
-  header.msg_size = sizeof(struct ulog_message_flag_bits_s) - ULOG_MSG_HEADER_LEN;
+  header.msg_size = sizeof(struct ulog_message_flag_bits_s) - kMESSAGE_HEADER_LEN;
   header.msg_type = (char)ULogMessageType::FLAG_BITS;
 
   struct ulog_message_flag_bits_s flag_bits;
@@ -267,6 +321,14 @@ uint64_t ULog::get_time_us() {
   return tv.tv_sec * (uint64_t)1E6 + tv.tv_nsec / (uint64_t)1E3;
 }
 
-void ULog::write_to_file(const void *buf, size_t size) { fd_.write(reinterpret_cast<const char *>(buf), size); }
+void ULog::write_to_file(const void *buf, size_t size) {
+  fd_.write(reinterpret_cast<const char *>(buf), size);
+
+  // Check if the write failed
+  if (std::ofstream::badbit & fd_.rdstate()) {
+    spdlog::error("ULog write failed. Error: {}", strerror(errno));
+    is_running_ = false;
+  }
+}
 
 }  // namespace flyMS

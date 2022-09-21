@@ -1,5 +1,5 @@
 /**
- * @file flyMS_app.cpp
+ * @file flyMS.cpp
  * @brief Application entry point of the flyMS program.
  *
  * @author Mike Sardonini
@@ -15,12 +15,18 @@
 
 #include "flyMS/FlightCore.h"
 #include "flyMS/config_requestor.h"
+#include "flyMS/debug_mode.hpp"
 #include "flyMS/ready_check.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
 
-void on_signal_received(int signo) {
+/**
+ * @brief Callback function for signals. SIGHUP (hangup signal) is ignored, others will stop the program
+ *
+ * @param signo The signal number received
+ */
+static void on_signal_received(int signo) {
   switch (signo) {
     case SIGHUP:
       break;
@@ -29,85 +35,82 @@ void on_signal_received(int signo) {
   }
 }
 
-void initSignalHandler() {
+void init_signal_handler() {
   signal(SIGINT, on_signal_received);
   signal(SIGKILL, on_signal_received);
+  signal(SIGTERM, on_signal_received);
   signal(SIGHUP, on_signal_received);
 }
 
-void shutdown() {
+/**
+ * @brief Shutdown the program and signal on the LEDs there was an error
+ *
+ */
+void shutdown_fail() {
   rc_set_state(EXITING);
   rc_led_set(RC_LED_GREEN, 0);
   rc_led_set(RC_LED_RED, 1);
 }
 
-int main(int argc, char *argv[]) {
-  // Enable the signal handler so we can exit cleanly on SIGINT
-  initSignalHandler();
+/**
+ * @brief Shutdown the program and turn off the LEDs
+ *
+ */
+void shutdown_success() {
+  rc_set_state(EXITING);
+  rc_led_set(RC_LED_GREEN, 0);
+  rc_led_set(RC_LED_RED, 0);
+}
 
-  bool is_debug_mode = false;
-  // Parse the command line arguments
-  int in;
-  while ((in = getopt(argc, argv, "dr:h")) != -1) {
-    switch (in) {
-      case 'd':
-        is_debug_mode = true;
-        std::cout << "Running in Debug mode" << std::endl;
-        break;
-      case 'r':
-        // Run Program in replay mode, need to provide filepath to log file
-        std::cout << "Running in Replay mode" << std::endl;
-        std::cout << "Replay mode not supported yet" << std::endl;
-        return 0;
-        break;
-      case 'h':
-        // Display the command line help options
-        // TODO: make this function
-        // print_usage();
-        return 0;
-      default:
-        std::cout << "Invalid Argument" << std::endl;
+/**
+ * @brief Application entry point of the flyMS program
+ */
+int main() {
+  init_signal_handler();
+
+  try {
+    if constexpr (flyMS::kDEBUG_MODE) {
+      if (!flyMS::wait_for_start_signal()) {
+        shutdown_fail();
         return -1;
+      }
     }
-  }
 
-  // Wait for the signal before starting the flight program
-  if (!is_debug_mode) {
-    if (flyMS::wait_for_start_signal()) {
+    // Load the Yaml Node
+    YAML::Node config_params = flyMS::get_config("http://localhost:5001/config");
+    if (config_params.size() == 0) {
+      shutdown_fail();
       return -1;
+    } else {
+      config_params = config_params["flyMSParams"];
     }
-  }
 
-  // Load the Yaml Node
-  YAML::Node config_params = flyMS::get_config("http://localhost:5001/config");
-  if (config_params.size() == 0) {
-    shutdown();
+    rc_set_state(UNINITIALIZED);
+
+    flyMS::FlightCore fly(config_params);
+    // Initialize the flight hardware
+    if (!fly.init()) {
+      rc_set_state(EXITING);
+      spdlog::error("Startup failed, exiting");
+      shutdown_fail();
+      return -1;
+    } else {
+      rc_led_set(RC_LED_GREEN, 1);
+      rc_led_set(RC_LED_RED, 0);
+    }
+    while (rc_get_state() != EXITING) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+  } catch (const std::exception &e) {
+    spdlog::error("Exception caught in main: {}", e.what());
+    shutdown_fail();
     return -1;
-  } else {
-    config_params = config_params["flyMSParams"];
-  }
-
-  // Override the debug flag if requested at the command line
-  if (is_debug_mode) {
-    config_params["debug_mode"] = "true";
-  }
-
-  rc_set_state(UNINITIALIZED);
-
-  flyMS::FlightCore fly(config_params);
-  // Initialize the flight hardware
-  if (fly.init()) {
-    rc_set_state(EXITING);
-    spdlog::error("Startup failed, exiting");
-    shutdown();
+  } catch (...) {
+    spdlog::error("Unknown exception caught in main");
+    shutdown_fail();
     return -1;
-  } else {
-    rc_led_set(RC_LED_GREEN, 1);
-    rc_led_set(RC_LED_RED, 0);
   }
-  while (rc_get_state() != EXITING) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-
+  shutdown_success();
   return 0;
 }

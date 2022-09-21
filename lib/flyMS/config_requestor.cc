@@ -10,9 +10,8 @@
  */
 #include "flyMS/config_requestor.h"
 
-#include <iostream>
-
 #include "HTTPRequest.hpp"
+#include "spdlog/spdlog.h"
 
 namespace flyMS {
 
@@ -34,7 +33,7 @@ YAML::Node get_config(const std::string &uri) {
     auto node = YAML::Load(response_str);
     return node;
   } catch (const std::exception &e) {
-    std::cerr << "Request failed, error: " << e.what() << std::endl;
+    spdlog::error("HTTP Request failed on URI {}, error: {}", uri, e.what());
     return YAML::Node();
   }
 }

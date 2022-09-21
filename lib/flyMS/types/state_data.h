@@ -1,10 +1,10 @@
-#ifndef SRC_FLYMS_INCLUDE_FLYMS_TYPES_STATE_DATA_H_
-#define SRC_FLYMS_INCLUDE_FLYMS_TYPES_STATE_DATA_H_
+#pragma once
 
 #include "Eigen/Dense"
 
+namespace flyMS {
+
 struct StateData {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   uint64_t timestamp_us;
 
   Eigen::Vector3f euler;      // Euler angles of aircraft (in roll, pitch, yaw)
@@ -21,4 +21,4 @@ struct StateData {
   float initialYaw;
 };
 
-#endif  // SRC_FLYMS_INCLUDE_FLYMS_TYPES_STATE_DATA_H_
+}  // namespace flyMS
