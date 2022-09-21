@@ -15,7 +15,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "flyMS/pru/pru_messages.h"
+#include "flyMS/hardware/pru/pru_messages.h"
 #include "flyMS/redis/RedisPublisher.h"
 #include "flyMS/redis/RedisSubscriber.h"
 #include "rc/servo.h"

@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-#include "flyMS/setpoint.h"  // TODO reorganize where this lives
+#include "flyMS/hardware/Setpoint.h"  // TODO reorganize where this lives
 #include "flyMS/types/state_data.h"
 
 namespace flyMS {

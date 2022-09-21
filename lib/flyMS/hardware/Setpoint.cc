@@ -6,12 +6,12 @@
  * @date 10/15/2018
  */
 
-#include "flyMS/setpoint.h"
+#include "flyMS/hardware/Setpoint.h"
 
 #include <chrono>
 #include <iostream>
 
-#include "flyMS/debug_mode.hpp"
+#include "flyMS/util/debug_mode.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 

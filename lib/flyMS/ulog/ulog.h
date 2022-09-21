@@ -40,7 +40,7 @@
 #include <string>
 #include <thread>
 
-#include "flyMS/setpoint.h"
+#include "flyMS/hardware/Setpoint.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/types/vio_data.h"
 #include "flyMS/ulog/ulog_messages.h"

@@ -14,9 +14,9 @@
 #include <string>
 
 #include "flyMS/FlightCore.h"
-#include "flyMS/config_requestor.h"
-#include "flyMS/debug_mode.hpp"
-#include "flyMS/ready_check.h"
+#include "flyMS/util/config_requestor.h"
+#include "flyMS/util/debug_mode.h"
+#include "flyMS/util/ready_check.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"

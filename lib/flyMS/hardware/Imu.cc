@@ -1,6 +1,6 @@
 
 
-#include "flyMS/imu/Imu.h"
+#include "flyMS/hardware/Imu.h"
 
 #include <iostream>
 

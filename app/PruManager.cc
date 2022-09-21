@@ -9,7 +9,7 @@
  * @copyright Copyright (c) 2022
  *
  */
-#include "flyMS/pru/PruManager.h"
+#include "flyMS/hardware/pru/PruManager.h"
 
 #include <thread>
 

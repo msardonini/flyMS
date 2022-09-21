@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2022
  *
  */
-#include "flyMS/config_requestor.h"
+#include "flyMS/util/config_requestor.h"
 
 #include "HTTPRequest.hpp"
 #include "spdlog/spdlog.h"

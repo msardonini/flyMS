@@ -6,7 +6,7 @@
  * @date 10/15/2018
  */
 
-#include "flyMS/gps.h"
+#include "flyMS/hardware/gps.h"
 
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"

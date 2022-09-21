@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "flyMS/imu/Imu.h"
+#include "flyMS/hardware/Imu.h"
 
 namespace flyMS {
 

@@ -15,7 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "flyMS/debug_mode.hpp"
+#include "flyMS/util/debug_mode.h"
 #include "rc/start_stop.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/rotating_file_sink.h"

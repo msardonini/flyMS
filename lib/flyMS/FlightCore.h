@@ -31,13 +31,12 @@
 #include <vector>
 
 #include "flyMS/DigitalFilter.hpp"
-#include "flyMS/gps.h"
-#include "flyMS/imu/Imu.h"
+#include "flyMS/hardware/Imu.h"
+#include "flyMS/hardware/Setpoint.h"
+#include "flyMS/hardware/gps.h"
+#include "flyMS/hardware/pru/PruRequester.h"
 #include "flyMS/position_generator.h"
-#include "flyMS/pru/PruRequester.h"
-#include "flyMS/pru_client.h"
 #include "flyMS/redis/MavlinkRedisSub.h"
-#include "flyMS/setpoint.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
