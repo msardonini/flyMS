@@ -1,8 +1,7 @@
 /**
  * @file RedisSubscriber.h
  * @author Mike Sardonini
- * @brief Header file for the RedisSubscriber, an object which assists in inter-process communication for using Redis
- * and Mavlink Messages
+ * @brief Declaration of RedisSubscriber class
  *
  * @version 0.1
  * @date 2022-08-12

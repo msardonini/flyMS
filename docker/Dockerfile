@@ -27,7 +27,8 @@ ARG UNAME=builduser
 ARG UID=1000
 ARG GID=1000
 RUN groupadd -g $GID -o $UNAME
-RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
+RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME && usermod -a -G sudo $UNAME
+RUN echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 USER $UNAME
 CMD /bin/bash
 
@@ -57,9 +58,11 @@ ARG UNAME=builduser
 ARG UID=1000
 ARG GID=1000
 RUN groupadd -g $GID -o $UNAME
-RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
+RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME && usermod -a -G sudo $UNAME
+RUN echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 USER $UNAME
 CMD /bin/bash
+
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 COPY entrypoint.sh /entrypoint.sh

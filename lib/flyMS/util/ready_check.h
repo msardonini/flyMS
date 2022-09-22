@@ -1,3 +1,13 @@
+/**
+ * @file ready_check.h
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief Declaration of ReadyCheck functions
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #pragma once
 
 namespace flyMS {

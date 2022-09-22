@@ -1,4 +1,13 @@
-#pragma once
+/**
+ * @file mavlink_interface.h
+ * @author Mike Sardonini
+ * @brief Declaration of MavlinkInterface class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 
 #include <unistd.h>
 

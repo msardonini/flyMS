@@ -1,4 +1,13 @@
-
+/**
+ * @file mavlink_interface.cc
+ * @author Mike Sardonini
+ * @brief Definition of MavlinkInterface class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "flyMS/mavlink_interface.h"
 
 #include <fcntl.h>

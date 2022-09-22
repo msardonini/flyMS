@@ -1,10 +1,19 @@
+/**
+ * @file PruManager.h
+ * @author Mike Sardonini (msaronini@gmail.com)
+ * @brief PruManager class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include <signal.h>
 #include <unistd.h>
 
 #include <atomic>
 #include <filesystem>
 #include <fstream>
-#include <iostream>  // debug
 #include <mutex>
 #include <thread>
 

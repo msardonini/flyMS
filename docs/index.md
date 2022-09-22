@@ -22,6 +22,7 @@ building_flyMS.md
 :caption: API Reference
 api_reference/flyMS_docs.md
 api_reference/logging.md
-api_reference/pru.md
+api_reference/hardware.md
+api_reference/util.md
 
 ```

@@ -15,12 +15,6 @@
 
 namespace flyMS {
 
-/**
- * @brief Get the flight configuration from the flyMS webserver and return it in the YAML::Node format
- *
- * @param uri The URI of the flyMS webserver
- * @return YAML::Node The flight configuration in the YAML::Node format
- */
 YAML::Node get_config(const std::string &uri) {
   try {
     // you can pass http::InternetProtocol::V6 to Request to make an IPv6

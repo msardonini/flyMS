@@ -1,3 +1,14 @@
+/**
+ * @file position_controller.cc
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief Definition of PositionController class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #include "flyMS/position_controller.h"
 
 #include <algorithm>

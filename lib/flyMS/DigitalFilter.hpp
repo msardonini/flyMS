@@ -1,3 +1,13 @@
+/**
+ * @file DigitalFilter.hpp
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief DigitalFilter class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #pragma once
 
 #include <array>
@@ -7,13 +17,31 @@
 
 namespace flyMS {
 
+/**
+ * @brief Class for digital filtering. Any discrete filter can be implemented, including FIR and IIR. Typical use cases
+ * are for PID controllers, and frequency selective filters.
+ *
+ * Example Usage:
+ * ```
+ * // Create a simple integrator filter
+ * std::vector<double> num = {0.0, 1.0};
+ * std::vector<double> den = {1.0, -1.0};
+ * flyMS::DigitalFilter filt(num, den);
+ *  for (auto i = 0; i < 50; i++) {
+ *    if (i == filt.update_filter(1.)) {
+ *      std::cout << "Integrator works!" << std::endl;
+ *    } else {
+ *      std::cout << "Integrator failed!" << std::endl;
+ *  }
+ * ```
+ */
 class DigitalFilter {
  public:
   /**
    * @brief Construct a new Digital Filter object
    *
    * @param numerator Numerator coefficients. Length must match denominator
-   * @param denominator Denominator coeffiecints. Leading term should be 1, the filter will normalize itself otherwise
+   * @param denominator Denominator coefficients. Leading term should be 1, the filter will normalize itself otherwise
    */
   DigitalFilter(const std::vector<double> &numerator, const std::vector<double> &denominator);
 
@@ -27,7 +55,7 @@ class DigitalFilter {
    * @brief Initialize the object if created with default ctor
    *
    * @param numerator Numerator coefficients. Length must match denominator
-   * @param denominator Denominator coeffiecints. Leading term should be 1, the filter will normalize itself otherwise
+   * @param denominator Denominator coefficients. Leading term should be 1, the filter will normalize itself otherwise
    */
   void init(const std::vector<double> &numerator, const std::vector<double> &denominator);
 

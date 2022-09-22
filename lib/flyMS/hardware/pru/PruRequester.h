@@ -1,7 +1,7 @@
 /**
  * @file PruRequester.h
  * @author Mike Sardonini
- * @brief PruRequester is a class which handles the ownship and use of the programmable real-time unit (PRU) on the
+ * @brief PruRequester is a class which handles the ownership and use of the programmable real-time unit (PRU) on the
  * BeagleBone, which is used to give commands to ESCs/motors.
  * @version 0.1
  * @date 2022-09-17

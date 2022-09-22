@@ -1,3 +1,13 @@
+/**
+ * @file position_controller.h
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief Declaration of PositionController class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #pragma once
 
 #include <memory>

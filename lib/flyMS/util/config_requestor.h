@@ -16,10 +16,12 @@
 
 namespace flyMS {
 
-/// \brief Queries the webserver for the flight configuration
-///
-/// \param uri The URI of the webserver to read from
-/// \return A YAML::Node of the flight configuration
+/**
+ * @brief Get the flight configuration from the flyMS webserver and return it in the YAML::Node format
+ *
+ * @param uri The URI of the flyMS webserver
+ * @return YAML::Node The flight configuration in the YAML::Node format
+ */
 YAML::Node get_config(const std::string &uri);
 
 }  // namespace flyMS

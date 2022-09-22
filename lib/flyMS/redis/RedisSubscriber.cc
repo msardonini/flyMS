@@ -1,8 +1,7 @@
 /**
  * @file redis_interface.cc
  * @author Mike Sardonini (msardonini@gmail.com)
- * @brief Source file for the RedisSubscriber, an object which assists in inter-process communication for using Redis
- * and Mavlink Messages
+ * @brief Definition of RedisSubscriber class
  * @version 0.1
  * @date 2022-08-12
  *

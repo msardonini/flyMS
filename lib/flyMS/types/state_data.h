@@ -1,3 +1,13 @@
+/**
+ * @file state_data.h
+ * @author Mike Sardonini
+ * @brief Declaration of StateData struct
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #pragma once
 
 #include "Eigen/Dense"

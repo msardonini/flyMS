@@ -1,5 +1,14 @@
-#ifndef SRC_FLYMS_INCLUDE_FLYMS_POSITION_GENERATOR_H_
-#define SRC_FLYMS_INCLUDE_FLYMS_POSITION_GENERATOR_H_
+/**
+ * @file position_generator.h
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief Declaration of the PositionGenerator class
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+#pragma once
 
 #include "Eigen/Dense"
 #include "yaml-cpp/yaml.h"
@@ -46,5 +55,3 @@ class PositionGenerator {
   unsigned int counter_ = 0;
   PATH_TYPE path_;
 };
-
-#endif  // SRC_FLYMS_INCLUDE_FLYMS_POSITION_GENERATOR_H_

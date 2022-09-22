@@ -1,3 +1,13 @@
+/**
+ * @file vio_data.h
+ * @author Mike Sardonini (msardonini@gmail.com)
+ * @brief Declaration of VioData struct
+ * @version 0.1
+ * @date 2022-09-21
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #pragma once
 
 #include "Eigen/Dense"
