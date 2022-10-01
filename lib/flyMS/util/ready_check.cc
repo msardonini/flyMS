@@ -44,7 +44,7 @@ bool wait_for_start_signal() {
   bool first_run = true;
   rc_led_set(RC_LED_RED, 0);
   rc_led_set(RC_LED_GREEN, 0);
-  std::cout << "Toggle the kill swtich twice and leave up to initialize" << std::endl;
+  spdlog::info("Toggle the kill swtich twice and leave up to initialize");
   while (toggle_count < MAX_TOGGLE_COUNT && rc_get_state() != EXITING) {
     // Blink the green LED light to signal that the program is ready
     if (loop_count % (READY_CHECK_LOOP_FREQUENCY_HZ / BLINK_FREQUENCY_HZ) == 0) {

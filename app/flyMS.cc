@@ -69,7 +69,7 @@ int main() {
   init_signal_handler();
 
   try {
-    if constexpr (flyMS::kDEBUG_MODE) {
+    if constexpr (!flyMS::kDEBUG_MODE) {
       if (!flyMS::wait_for_start_signal()) {
         shutdown_fail();
         return -1;

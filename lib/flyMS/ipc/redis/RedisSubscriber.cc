@@ -9,20 +9,23 @@
  *
  */
 
-#include "flyMS/redis/RedisSubscriber.h"
+#include "flyMS/ipc/redis/RedisSubscriber.h"
+
+#include "flyMS/ipc/redis/redis_default_connection_opts.h"
 
 namespace flyMS {
 
 RedisSubscriber::RedisSubscriber(std::function<void(std::string, std::string)> callback,
+                                 const std::vector<std::string> &channels,
                                  std::function<void(const sw::redis::Error &)> error_callback)
-    : on_timeout_(error_callback) {
-  sw::redis::ConnectionOptions opts1;
-  opts1.host = kRedisHost;
-  opts1.port = kRedisPort;
-  opts1.socket_timeout = kRedisTimeout;
-
-  redis_ = std::make_unique<sw::redis::Redis>(opts1);
+    : on_error_(error_callback) {
+  auto opts = redis_default_connection_opts();
+  redis_ = std::make_unique<sw::redis::Redis>(opts);
   sub_ = std::make_unique<sw::redis::Subscriber>(redis_->subscriber());
+
+  for (const auto &channel : channels) {
+    sub_->subscribe(channel);
+  }
   sub_->on_message(callback);
 
   is_running_ = true;
@@ -36,22 +39,17 @@ RedisSubscriber::~RedisSubscriber() {
   }
 }
 
-void RedisSubscriber::subscribe_to_channel(std::string_view channel) { sub_->subscribe(channel); }
+void RedisSubscriber::set_error_callback(std::function<void(const sw::redis::Error)> callback) { on_error_ = callback; }
 
-void RedisSubscriber::set_timeout_callback(std::function<void(const sw::redis::Error)> callback) {
-  on_timeout_ = callback;
-}
-
-void RedisSubscriber::default_timeout_callback(const sw::redis::Error &err) {
-  spdlog::warn("Timeout exceeded, err: {}", err.what());
-}
+// Default behavior is to do nothing
+void RedisSubscriber::default_timeout_callback(const sw::redis::Error &err) {}
 
 void RedisSubscriber::subscribe_thread() {
   while (is_running_.load()) {
     try {
       sub_->consume();
     } catch (const sw::redis::Error &err) {
-      on_timeout_(err);
+      on_error_(err);
     }
   }
 }

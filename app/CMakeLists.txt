@@ -27,16 +27,16 @@ target_link_libraries(flyMS
     flyMS_lib
 )
 
-add_executable(flyStereo_interface
-  flyStereo_interface.cc
+add_executable(mission_interface
+  mission_interface.cc
 )
-target_link_libraries(flyStereo_interface
+target_link_libraries(mission_interface
   PRIVATE
     flyMS_lib
     redis++_static
 )
 
-set_target_properties(flyMS test_webserver PruManager flyStereo_interface
+set_target_properties(flyMS test_webserver PruManager mission_interface
   PROPERTIES
   LINK_FLAGS "-static-libstdc++ -static-libgcc"
   # LINK_FLAGS "-static"

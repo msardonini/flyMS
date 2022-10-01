@@ -16,8 +16,8 @@
 #include <mutex>
 
 #include "flyMS/hardware/pru/pru_messages.h"
-#include "flyMS/redis/RedisPublisher.h"
-#include "flyMS/redis/RedisSubscriber.h"
+#include "flyMS/ipc/redis/RedisPublisher.h"
+#include "flyMS/ipc/redis/RedisSubscriber.h"
 #include "rc/servo.h"
 #include "spdlog/spdlog.h"
 
@@ -57,10 +57,8 @@ class PruRequester {
    */
   PruRequester()
       : redis_subscriber_(std::bind(&PruRequester::redis_callback, this, std::placeholders::_1, std::placeholders::_2),
-                          [](const sw::redis::Error& er) {}) {
-    redis_subscriber_.subscribe_to_channel(kredis_request_response_channel);
-    redis_subscriber_.subscribe_to_channel(kredis_release_response_channel);
-  }
+                          {kredis_request_response_channel, kredis_release_response_channel},
+                          [](const sw::redis::Error& er) {}) {}
 
   /**
    * @brief Destroy the Pru Requester object. If the PruRequester has PRU ownship at this time, it will release access

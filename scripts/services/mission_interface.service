@@ -1,0 +1,12 @@
+[Unit]
+Description=mission_interface
+After=network.target generic-board-startup.service redis.service
+
+[Service]
+User=debian
+Restart=always
+PIDFile=/var/run/flyMS.pid
+ExecStart=/home/debian/bin/flyMS
+
+[Install]
+WantedBy=multi-user.target

@@ -8,11 +8,13 @@ pushd $SCRIPT_DIR
 sudo cp services/flyMS.service /etc/systemd/system/
 sudo cp services/flyMS_webserver.service /etc/systemd/system/
 sudo cp services/PruManager.service /etc/systemd/system/
+sudo cp services/mission_interface.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
 sudo systemctl enable flyMS
 sudo systemctl enable flyMS_webserver
 sudo systemctl enable PruManager
+sudo systemctl enable mission_interface
 
 # Enable certain commands to run without sudo password
 sudo cp ./debian_sudoers /etc/sudoers.d/debian

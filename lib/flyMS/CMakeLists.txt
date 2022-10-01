@@ -7,15 +7,13 @@ endif()
 
 add_subdirectory(hardware)
 add_subdirectory(util)
+add_subdirectory(ipc)
 
-#Build flyMS_lib
+# Build flyMS_lib
 add_library(flyMS_lib STATIC
-  redis/RedisSubscriber.cc
-  redis/MavlinkRedisSub.cc
   DigitalFilter.cc
   FlightCore.cc
   position_controller.cc
-  mavlink_interface.cc
   ulog/ulog.cc
 )
 
@@ -23,12 +21,11 @@ target_link_libraries(flyMS_lib
   PUBLIC
     flyMS_util
     flyMS_hardware
+    flyMS_ipc
     spdlog
     robotics_cape
     Eigen3::Eigen
     yaml-cpp
-    mavlink_v2
-    redis++_static
     stdc++fs
 )
 
