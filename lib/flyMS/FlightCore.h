@@ -9,18 +9,15 @@
 
 // TODO let flyMS run as non-root and access the pru
 // https://unix.stackexchange.com/questions/475800/non-root-read-access-to-dev-mem-by-kmem-group-members-fails
-// TODO add file doxygen comments for all files
+// TODO handle the flight mode config parameter appropriately
+// TODO Consistent Redis hostname from both x86 and arm
 // TODO add a rotation matrix config field to update with the webserver
 // TODO find any other config parameters that need to be adjustable via the web interface
 // TODO expand unit tests, automate with github pipelines
-// TODO deploy documentation and webserver UI to github pages
-// TODO generate logo using DALLE
+// TODO deploy webserver UI to github pages
+// TODO generate logo using DALL-E
 // TODO document the following in sphinx:
-// 1. Coordinate systems for drone, body vs imu
-// 2. Wiring Diagram
-// 3. Flashing the beagle, updating with dependencies
-// 4. Building software
-// 5. Interfacing with the flyMS webserver
+// 1. Interfacing with the flyMS webserver
 
 // System Includes
 #include <array>
@@ -35,8 +32,8 @@
 #include "flyMS/hardware/Setpoint.h"
 #include "flyMS/hardware/gps.h"
 #include "flyMS/hardware/pru/PruRequester.h"
+#include "flyMS/ipc/mavlink/MavlinkRedisSubQueue.h"
 #include "flyMS/position_generator.h"
-#include "flyMS/redis/MavlinkRedisSub.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
@@ -45,6 +42,8 @@
 #include "yaml-cpp/yaml.h"
 
 namespace flyMS {
+
+static constexpr char kFLY_STEREO_CHANNEL[] = "mission_mavlink_data";
 
 /**
  * @brief Object responsible for the inner loop of the flight controller
@@ -123,12 +122,11 @@ class FlightCore {
   Imu &imu_module_;  //< Reference to Imu singleton object and Data struct from the imu manager
   ULog ulog_;        //< Class to handle and write to the log file
 
-  Setpoint setpoint_module_;                             //< Object and Data struct from the setpoint manager
-  std::unique_ptr<MavlinkRedisSub> mavlink_subscriber_;  //< Object to handle the I/O with redis
-  PositionController position_controller_;               //< Controller for position when flying using flySetero
-  gps gps_module_;                                       //< Data struct from the gps manager
-  GPS_data_t gps_;                                       //< GPS Manager
-  PruRequester pru_requester_;                           //< Object to handle ownership of the PRU with the PruHandler
+  Setpoint setpoint_module_;                                        //< Object and Data struct from the setpoint manager
+  std::unique_ptr<MavlinkRedisSubQueue> mavlink_subscriber_;        //< Receive mavlink messages from Redis
+  std::shared_ptr<RedisQueue<mavlink_odometry_t>> odometry_queue_;  //< A shared queue to receive odometry data
+  PositionController position_controller_;  //< Controller for position when flying using flyStereo
+  PruRequester pru_requester_;              //< Object to handle ownership of the PRU with the PruHandler
 
   DigitalFilter roll_inner_PID_;
   DigitalFilter roll_outer_PID_;

@@ -5,7 +5,6 @@
  * @author Mike Sardonini
  * @date 10/15/2018
  */
-
 #pragma once
 
 #include <array>
@@ -16,6 +15,7 @@
 
 #include "flyMS/position_controller.h"
 #include "flyMS/types/flight_mode.h"
+#include "flyMS/util/yaml_serialization.h"
 #include "rc/dsm.h"
 #include "yaml-cpp/yaml.h"
 
@@ -33,6 +33,26 @@ struct SetpointData {
   float kill_switch;                  //< Value of the kill switch channel
 };
 
+struct SetpointConfig {
+  uint32_t flight_mode;
+  std::array<float, 3> max_setpoints_stabilized;
+  std::array<float, 3> max_setpoints_acro;
+  std::array<float, 2> throttle_limits;
+
+  bool operator==(const SetpointConfig& rhs) const {
+    return std::tie(flight_mode, max_setpoints_stabilized, max_setpoints_acro, throttle_limits) ==
+           std::tie(rhs.flight_mode, rhs.max_setpoints_stabilized, rhs.max_setpoints_acro, rhs.throttle_limits);
+  }
+
+  constexpr static auto properties =
+      std::make_tuple(property(&SetpointConfig::flight_mode, "flight_mode"),
+                      property(&SetpointConfig::max_setpoints_stabilized, "max_setpoints_stabilized"),
+                      property(&SetpointConfig::max_setpoints_acro, "max_setpoints_acro"),
+                      property(&SetpointConfig::throttle_limits, "throttle_limits")
+
+      );
+};
+
 /**
  * @brief Setpoint class. Communicates with the remote control (using robotics_cape rc_dsm interface) to receive
  * commands. Commands are: throttle, roll, pitch, yaw, kill_switch, and Aux_switch. Switches have binary information
@@ -40,7 +60,6 @@ struct SetpointData {
  */
 class Setpoint {
  public:
-  // TODO move is_debug_mode to a compile time constant
   /**
    * @brief Construct a new Setpoint object
    *
@@ -51,6 +70,8 @@ class Setpoint {
    */
   Setpoint(FlightMode flight_mode, std::array<float, 3> max_setpts_stabilized, std::array<float, 3> max_setpts_acro,
            std::array<float, 2> throttle_limits);
+
+  Setpoint(SetpointConfig config);
 
   /**
    * @brief Construct a new Setpoint object using a yaml node. The node must have all the parameters needed in the main
@@ -66,24 +87,25 @@ class Setpoint {
    */
   ~Setpoint();
 
-  Setpoint() = delete;
-
   /**
    * @brief Construct a new Setpoint object using the move constructor
    *
    */
-  Setpoint(Setpoint&&);
+  Setpoint(Setpoint&&) = default;
 
   /**
    * @brief Construct a new Setpoint object using the move assignment operator
    *
    * @return Setpoint&
    */
-  Setpoint& operator=(Setpoint&&);
+  Setpoint& operator=(Setpoint&&) = default;
 
-  // The setpoint object 'owns' communication with hardware so it is not copyable
-  Setpoint(const Setpoint&) = delete;
-  Setpoint& operator=(const Setpoint&) = delete;
+  /**
+   * @brief Get the Setpoint Data object
+   *
+   * @return SetpointData
+   */
+  SetpointData get_controller_setpoints();
 
   /**
    * @brief Initialize the object. Start the internal thread and initialize communication with the remote controller
@@ -129,9 +151,6 @@ class Setpoint {
   std::thread setpoint_thread_;                 //< Thread that reads dsm2 UART
   std::unique_ptr<std::mutex> setpoint_mutex_;  //< Mutex that protects setpoint_data_
   SetpointData setpoint_data_;                  //< Data to be shared with the user when called
-
-  std::atomic<bool> is_running_;         //< Flag to indicate if the object is running vs shutting down
-  std::atomic<bool> has_received_data_;  //< True if any dsm packet has been received
 
   // All configurable parameters
   FlightMode flight_mode_;                         //< The flight mode

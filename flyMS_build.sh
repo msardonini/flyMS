@@ -36,7 +36,7 @@ function build_docker_image {
 }
 
 function dev_flyMS {
-  docker run --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
+  docker run --network redis --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
 }
 
 function build_flyMS {

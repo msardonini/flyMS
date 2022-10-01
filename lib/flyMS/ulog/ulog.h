@@ -93,12 +93,12 @@ class ULog {
   /**
    * @brief Creates a directory for logging data for a given run. This is run with a very simple naming scheme, where
    * the directory is named `run<number>`, where `<number>` is the first number that doesn't already exist. The date or
-   * time is not used because the hardware usually doesn't have a clock that is synchornized with local time
+   * time is not used because the hardware usually doesn't have a clock that is synchronized with local time
    *
    * @param log_folder The base folder to create the run directory in
    * @return std::filesystem::path The path to the created directory
    */
-  static std::filesystem::path generate_intremented_run_dir(const std::filesystem::path &log_folder);
+  static std::filesystem::path generate_incremented_run_dir(const std::filesystem::path &log_folder);
 
  private:
   /**

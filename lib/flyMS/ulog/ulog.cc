@@ -154,7 +154,7 @@ ULog::~ULog() {
   fd_.close();
 }
 
-std::filesystem::path ULog::generate_intremented_run_dir(const std::filesystem::path &log_folder) {
+std::filesystem::path ULog::generate_incremented_run_dir(const std::filesystem::path &log_folder) {
   auto get_run_str = [](const int run_number) { return fmt::format("run{:03d}", run_number); };
 
   int run_number = 1;

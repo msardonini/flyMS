@@ -1,6 +1,7 @@
 /**
  * @file gps.hpp
- * @brief Source code to communicate with the trimble copernicus II GPS module
+ * @brief Source code to communicate with the trimble copernicus II GPS module. This code is currently deprecated and
+ * only here for reference
  *
  * @author Mike Sardonini
  * @date 10/15/2018

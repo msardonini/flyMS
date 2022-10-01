@@ -24,6 +24,7 @@ flyMSParams:
         max_control_effort: [0.30, 0.30, 0.25]
     setpoint:
         headless_mode: false
+        flight_mode: 1
         max_setpoints_stabilized: [0.8, 0.8, 3.0]
         max_setpoints_acro: [0.8, 0.8, 3.0]
         throttle_limits: [0.4, 0.75]

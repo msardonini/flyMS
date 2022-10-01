@@ -18,8 +18,8 @@
 #include <thread>
 
 #include "flyMS/hardware/pru/pru_messages.h"
-#include "flyMS/redis/RedisPublisher.h"
-#include "flyMS/redis/RedisSubscriber.h"
+#include "flyMS/ipc/redis/RedisPublisher.h"
+#include "flyMS/ipc/redis/RedisSubscriber.h"
 #include "rc/servo.h"
 #include "yaml-cpp/yaml.h"
 
@@ -63,15 +63,13 @@ class PruManager {
    * 3. Initializes hardware and starts commanding zeros while this object owns the PRU
    */
   PruManager()
-      : redis_subscriber_(std::bind(&PruManager::on_message, this, std::placeholders::_1, std::placeholders::_2)) {
+      : redis_subscriber_(std::bind(&PruManager::on_message, this, std::placeholders::_1, std::placeholders::_2),
+                          {kredis_request_channel, kredis_release_channel}) {
     // Ensure there is only one instance of this program running system-wide
     if (!pid_handler(kPID_FILE_PRU)) {
       throw std::runtime_error("Could not create PID file for PruManager.");
     }
-
-    redis_subscriber_.subscribe_to_channel(kredis_request_channel);
-    redis_subscriber_.subscribe_to_channel(kredis_release_channel);
-    redis_subscriber_.set_timeout_callback([](const sw::redis::Error &er) {});  // ignore timeouts, they are expected
+    redis_subscriber_.set_error_callback([](const sw::redis::Error &er) {});  // ignore timeouts, they are expected
 
     // Initialize the PRU hardware
     rc_servo_init();

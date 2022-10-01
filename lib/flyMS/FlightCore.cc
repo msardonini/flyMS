@@ -37,7 +37,6 @@ FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_contro
       ulog_(),
       setpoint_module_(std::move(setpoint)),
       position_controller_(std::move(position_controller)),
-      gps_module_(),
       config_params_(config_params) {
   flight_mode_ = static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>());
   log_filepath_ = config_params["log_filepath"].as<std::string>();
@@ -47,7 +46,8 @@ FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_contro
 }
 
 FlightCore::FlightCore(const YAML::Node &config_params)
-    : FlightCore(Setpoint(config_params), PositionController(config_params["position_controller"]), config_params) {}
+    : FlightCore(Setpoint(config_params["setpoint"]), PositionController(config_params["position_controller"]),
+                 config_params) {}
 
 bool FlightCore::init() {
   // Create a file for logging and initialize our file logger
@@ -55,16 +55,10 @@ bool FlightCore::init() {
 
   // TODO: improve the logic to decide whether to initialize the object or not
   if (config_params_["mavlink_interface"]["enable"].as<bool>()) {
-    mavlink_subscriber_ = std::make_unique<MavlinkRedisSub>(1);  // max queue size of 1 (always take the latest)
-    mavlink_subscriber_->subscribe_to_channel("FlyStereoData");
+    mavlink_subscriber_ = std::make_unique<MavlinkRedisSubQueue>(kFLY_STEREO_CHANNEL);
+    odometry_queue_ = mavlink_subscriber_->register_message_with_queue<mavlink_odometry_t, MAVLINK_MSG_ID_ODOMETRY>(
+        &mavlink_msg_odometry_decode);
   }
-
-  if (config_params_["enable_gps"].as<bool>()) {
-    gps_module_.init();
-  }
-
-  // Initialize the remote controller through the setpoint object
-  setpoint_module_.init();
 
   // Blocks execution until a packet is received
   if constexpr (!kDEBUG_MODE) {
@@ -114,24 +108,29 @@ void FlightCore::flight_core(StateData &imu_data_body) {
    *       Check the Mavlink Interface for New Visual Odometry Data
    ************************************************************************/
   Eigen::Vector3f setpoint_orientation;
-  if (mavlink_subscriber_) {
-    float vio_yaw;
-    auto [vio, is_valid] = mavlink_subscriber_->GetVioData();
+  if (mavlink_subscriber_ && odometry_queue_) {
+    // Check if there is a new packet
 
-    if (is_valid) {
-      spdlog::warn("vio x: {}, vio y: {}", vio.position[0], vio.position[1]);
-      position_controller_.ReceiveVio(vio);
-      std::tie(setpoint_orientation, vio_yaw) = position_controller_.GetSetpoint();
-
-      float log_setpoint[4] = {setpoint_orientation(0), setpoint_orientation(1), vio_yaw, setpoint_orientation(2)};
-      float quat_setpoint[4] = {vio.quat.w(), vio.quat.x(), vio.quat.y(), vio.quat.z()};
-
-      // Log the VIO Data
-      ULogPosCntrlMsg vio_log_msg(imu_data_body.timestamp_us, vio.position.data(), vio.velocity.data(), quat_setpoint,
-                                  log_setpoint);
-      ulog_.write_msg(vio_log_msg);
-      flyStereo_streaming_data_ = true;
+    // TODO: handle navigation data properly with the position controller
+    if (odometry_queue_->size() > 0) {
+      mavlink_odometry_t odometry_packet = odometry_queue_->pop_front();
     }
+
+    // if (is_valid) {
+    //   spdlog::warn("vio x: {}, vio y: {}", vio.position[0], vio.position[1]);
+    //   position_controller_.ReceiveVio(vio);
+    //   std::tie(setpoint_orientation, vio_yaw) = position_controller_.GetSetpoint();
+
+    //   float log_setpoint[4] = {setpoint_orientation(0), setpoint_orientation(1), vio_yaw, setpoint_orientation(2)};
+    //   float quat_setpoint[4] = {vio.quat.w(), vio.quat.x(), vio.quat.y(), vio.quat.z()};
+
+    //   // Log the VIO Data
+    //   ULogPosCntrlMsg vio_log_msg(imu_data_body.timestamp_us, vio.position.data(), vio.velocity.data(),
+    //   quat_setpoint,
+    //                               log_setpoint);
+    //   ulog_.write_msg(vio_log_msg);
+    //   flyStereo_streaming_data_ = true;
+    // }
   }
 
   /************************************************************************
@@ -291,10 +290,6 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   if constexpr (kDEBUG_MODE) {
     // console_print(imu_data_body, setpoint, u);
   }
-  /************************************************************************
-   *             Check for GPS Data and Handle Accordingly               *
-   ************************************************************************/
-  gps_module_.getGpsData(&gps_);
 
   /************************************************************************
    *               Log Important Flight Data For Analysis              *
@@ -342,7 +337,7 @@ int FlightCore::console_print(const StateData &imu_data_body, const SetpointData
 }
 
 void FlightCore::init_logging(const std::filesystem::path &log_location) {
-  auto log_dir = ULog::generate_intremented_run_dir(log_location);
+  auto log_dir = ULog::generate_incremented_run_dir(log_location);
 
   // Initialize spdlog
   std::vector<spdlog::sink_ptr> sinks;
