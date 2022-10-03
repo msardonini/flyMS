@@ -43,17 +43,13 @@ is also supported, and with externally provided navigation data,
     * Battery
 5. (Optional) A smartphone, for rapid PID tuning during outdoor testing
 
-## Communication with the Beaglebone
-
-For flashing software or accessing the [flyMS Webserver](#flyMS-Webserver), the network (usually WiFi) is used. For
-in-flight navigation commands, a Spektrum RC and
-[digital receiver](https://www.spektrumrc.com/Products/Default.aspx?ProdID=SPM9645) are used.
 
 ## flyMS Webserver
 
-The flyMS Webserver is run on the beaglebone itself, and is used to dynamically make configuration changes or update
-calibration.
+flyMS comes with a webserver that is used for interfacing with the flight controller. It can update configurations
+(PID constants, flight behavior, etc.), run calibration routines, and inform you of errors. It
+can be accessed at http://beaglebone.local:5001/ from any device on a shared network.
 
-For example, if you want to iterate on PID constants in between flights, you can use the flyMS Webserver. On a smart
-phone, connect to the wifi network broadcasted by the beaglebone, navigate to to the URL of the webserver, and make
-modifications to PID constants between flights. This helps accelerate the process of getting a smooth flight.
+> **_NOTE:_** If flight testing away from a local WiFi connection, you can use a smartphone to connect to the WiFi
+network broadcasted by the beaglebone itself to access this webserver. The network name is `BeagleBone-XXXX` with a
+default password of `BeagleBone`
