@@ -3,11 +3,11 @@
 These are the steps required to get the software on the beaglebone running for the first time. These steps will only
 need to be executed once. They are intended to be executed in order.
 
-## Flash The Beagleboard
-Flash the beaglebone to the [latest image](https://beagleboard.org/latest-images). At the time of this writing,
-Debian Buster (version 2020-04-06) is used. The headless version is recommended (without graphical desktop)
+## Flash The Beaglebone
+Flash the beaglebone to the [latest image](https://beagleboard.org/latest-images). The headless version is recommended
+(without graphical desktop)
 
-## Get an SSH Sesssion
+## Get an SSH Session
 When plugged into your linux PC via USB, the beaglebone should automatically establish a network connection.
 You can access it from either `192.168.6.2` or `192.168.7.2`. To determine which address is active, examine the
 output of:
@@ -64,11 +64,11 @@ debian@beaglebone:~$ sudo apt upgrade
 ```
 
 ## Build and Deploy
-Build and deploy flyMS to beagleboard. [See Build section](Building-flyMS)
+Build and deploy flyMS to beaglebone. [See Build section](Building-flyMS)
 
 
 ## Install flyMS services:
-After flyMS is built and deployed to the beagleboard, run the following script:
+After flyMS is built and deployed to the beaglebone, run the following script:
 
 ```
 debian@beaglebone:~$ sudo ~/bin/install_flyMS.sh

@@ -24,7 +24,7 @@ This is the only I/O port that fits the 3-wire **JST ZHR-3** connector that is s
 
 ## Mission Computer
 
-The *Optional* mission computer computer connects to UART5, which is the I/O port directly above the DSM port. This
+The *Optional* mission computer connects to UART5, which is the I/O port directly above the DSM port. This
 port is intended to be used to send navigation feedback and trajectory commands via serialized mavlink messages.
 
 
