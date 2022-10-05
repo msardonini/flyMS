@@ -73,7 +73,7 @@ class PruManager {
 
     // Initialize the PRU hardware
     rc_servo_init();
-
+    owns_pru_ = true;
     start_sending_zeros();
   }
   ~PruManager() {
@@ -137,7 +137,7 @@ class PruManager {
    *
    */
   void send_zeros() {
-    while (owns_pru_) {
+    while (is_running_zero_sender_) {
       for (auto i = 0; i < kNUM_PRU_CHANNELS; i++) {
         rc_servo_send_esc_pulse_normalized(i + 1, 0.0);
       }
@@ -150,14 +150,17 @@ class PruManager {
    *
    */
   void stop_sending_zeros() {
+    spdlog::debug("Stopping zero sender thread.");
     if (!owns_pru_) {
+      spdlog::warn("Instructed to stop sending zeros to PRU, but PRU is not owned.");
       return;
     }
 
-    owns_pru_ = false;
+    is_running_zero_sender_ = false;
     if (send_zero_thread_.joinable()) {
       send_zero_thread_.join();
     }
+    spdlog::debug("Stopped zero sender thread.");
   }
 
   /**
@@ -165,12 +168,12 @@ class PruManager {
    *
    */
   void start_sending_zeros() {
-    if (owns_pru_) {
-      spdlog::warn("Instructed to start sending zeros when the thread is already running");
+    spdlog::debug("Starting thread to send zeros to PRU.");
+    if (!owns_pru_) {
+      spdlog::warn("Instructed to start sending zeros, without ownership of the PRU.");
       return;
     }
-
-    owns_pru_ = true;
+    is_running_zero_sender_ = true;
     send_zero_thread_ = std::thread(&PruManager::send_zeros, this);
   }
 
@@ -194,10 +197,14 @@ class PruManager {
       auto pru_request = from_yaml<PruRequest>(YAML::Load(message.data()));
       if (owns_pru_) {
         process_id_sender_ = pru_request.pid;
+        spdlog::info("Received request to own PRU from process with PID {}", pru_request.pid);
         stop_sending_zeros();
+        rc_servo_cleanup();
+        owns_pru_ = false;
         response.success = true;
-        response.reason = "";
+        response.reason = "success";
       } else {
+        spdlog::warn("Received request when someone else owns PRU");
         response.success = false;
         response.reason = "PRU already in use";
       }
@@ -206,11 +213,15 @@ class PruManager {
       auto request = from_yaml<PruRequest>(YAML::Load(message.data()));
       PruResponse response;
       if (request.pid == process_id_sender_) {
+        spdlog::info("Received request to release PRU from process with PID {}", request.pid);
+        owns_pru_ = true;
+        rc_servo_init();
         start_sending_zeros();
         process_id_sender_ = -1;
         response.success = true;
-        response.reason = "";
+        response.reason = "success";
       } else {
+        spdlog::warn("Process ID does not match the one that requested access");
         response.success = false;
         response.reason = "Process ID does not match the one that requested access";
       }
@@ -226,6 +237,7 @@ class PruManager {
   std::thread send_zero_thread_;       //< Thread for sending zeros to the PRU
   std::atomic<bool> owns_pru_{false};  //< Flag to indicate if this object owns the PRU. This is also used to send zeros
                                        // to the PRU when nothing is connected to it
+  std::atomic<bool> is_running_zero_sender_{false};  //< Flag to indicate if the zero sender thread is running
 };
 
 }  // namespace flyMS

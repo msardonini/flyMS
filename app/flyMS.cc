@@ -47,6 +47,8 @@ void init_signal_handler() {
  *
  */
 void shutdown_fail() {
+  spdlog::error("Shutting down due to error");
+  spdlog::info("Shutting down due to error");
   rc_set_state(EXITING);
   rc_led_set(RC_LED_GREEN, 0);
   rc_led_set(RC_LED_RED, 1);
@@ -57,6 +59,7 @@ void shutdown_fail() {
  *
  */
 void shutdown_success() {
+  spdlog::info("Shutting down");
   rc_set_state(EXITING);
   rc_led_set(RC_LED_GREEN, 0);
   rc_led_set(RC_LED_RED, 0);
@@ -69,6 +72,11 @@ int main() {
   init_signal_handler();
 
   try {
+    if constexpr (flyMS::kDEBUG_MODE) {
+      spdlog::info("Debug mode enabled");
+    } else {
+      spdlog::info("Debug mode disabled");
+    }
     if constexpr (!flyMS::kDEBUG_MODE) {
       if (!flyMS::wait_for_start_signal()) {
         shutdown_fail();
@@ -86,18 +94,21 @@ int main() {
     }
 
     rc_set_state(UNINITIALIZED);
-
     flyMS::FlightCore fly(config_params);
+    spdlog::info("get state is {}", rc_get_state());
     // Initialize the flight hardware
     if (!fly.init()) {
+      spdlog::info("fail {}", rc_get_state());
       rc_set_state(EXITING);
       spdlog::error("Startup failed, exiting");
       shutdown_fail();
       return -1;
     } else {
+      spdlog::info("success {}", rc_get_state());
       rc_led_set(RC_LED_GREEN, 1);
       rc_led_set(RC_LED_RED, 0);
     }
+
     while (rc_get_state() != EXITING) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }

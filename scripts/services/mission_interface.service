@@ -5,8 +5,8 @@ After=network.target generic-board-startup.service redis.service
 [Service]
 User=debian
 Restart=always
-PIDFile=/var/run/flyMS.pid
-ExecStart=/home/debian/bin/flyMS
+PIDFile=/var/run/mission_interface.pid
+ExecStart=/home/debian/bin/mission_interface
 
 [Install]
 WantedBy=multi-user.target

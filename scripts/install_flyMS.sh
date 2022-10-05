@@ -9,12 +9,14 @@ sudo cp services/flyMS.service /etc/systemd/system/
 sudo cp services/flyMS_webserver.service /etc/systemd/system/
 sudo cp services/PruManager.service /etc/systemd/system/
 sudo cp services/mission_interface.service /etc/systemd/system/
+sudo cp services/mem_permissions.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
 sudo systemctl enable flyMS
 sudo systemctl enable flyMS_webserver
 sudo systemctl enable PruManager
 sudo systemctl enable mission_interface
+sudo systemctl enable mem_permissions.service
 
 # Enable certain commands to run without sudo password
 sudo cp ./debian_sudoers /etc/sudoers.d/debian
@@ -31,6 +33,10 @@ grep -qxF "debian hard rtprio 99" /etc/security/limits.conf || sudo echo "debian
   /etc/security/limits.conf
 grep -qxF "debian soft rtprio 99" /etc/security/limits.conf || sudo echo "debian soft rtprio 99" >> \
   /etc/security/limits.conf
+
+# Make /dev/mem group accessible
+sudo chmod g+rw /dev/mem
+sudo usermod -aG kmem debian
 
 popd
 

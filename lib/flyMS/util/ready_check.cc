@@ -13,9 +13,10 @@
 
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <thread>
 
-#include "rc/dsm.h"
+#include "flyMS/hardware/RemoteController.h"
 #include "rc/led.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
@@ -23,60 +24,49 @@
 namespace flyMS {
 
 constexpr uint32_t READY_CHECK_LOOP_FREQUENCY_HZ = 100;
-constexpr uint32_t READY_CHECK_SLEEP_TIME_US = 1E6 / READY_CHECK_LOOP_FREQUENCY_HZ;
+constexpr auto READY_CHECK_SLEEP_TIME = std::chrono::microseconds(1000000 / READY_CHECK_LOOP_FREQUENCY_HZ);
 constexpr uint32_t BLINK_FREQUENCY_HZ = 5;
 constexpr uint32_t MAX_TOGGLE_COUNT = 6;
 constexpr float SWITCH_THRESHOLD_VAL = 0.25f;  // dsm switch vals come in as floats. Need thresh to detect switches
-constexpr uint32_t SWITCH_CHANNEL = 5;
 
 bool wait_for_start_signal() {
-  // Initialze the serial RC hardware
-  if (rc_dsm_init()) {
-    return false;
-  }
-
   // Toggle the kill switch to get going, to ensure controlled take-off
   // Keep kill switch down to remain operational
-  int led_status = 0;
   std::size_t toggle_count = 0;
   std::size_t loop_count = 0;
+  int green_led_value = 0;
   float prev_switch_val = 0.0f;
-  bool first_run = true;
+  std::once_flag first_run;
   rc_led_set(RC_LED_RED, 0);
   rc_led_set(RC_LED_GREEN, 0);
-  spdlog::info("Toggle the kill swtich twice and leave up to initialize");
-  while (toggle_count < MAX_TOGGLE_COUNT && rc_get_state() != EXITING) {
+  spdlog::info("Toggle the kill switch twice and leave up to initialize");
+  while (rc_get_state() != EXITING && toggle_count < MAX_TOGGLE_COUNT) {
     // Blink the green LED light to signal that the program is ready
-    if (loop_count % (READY_CHECK_LOOP_FREQUENCY_HZ / BLINK_FREQUENCY_HZ) == 0) {
-      led_status = (led_status) ? 0 : 1;
-      rc_led_set(RC_LED_GREEN, led_status);
+    if (loop_count++ % (READY_CHECK_LOOP_FREQUENCY_HZ / BLINK_FREQUENCY_HZ) == 0) {
+      green_led_value = (green_led_value ? 0 : 1);
+      rc_led_set(RC_LED_GREEN, green_led_value);
     }
 
-    if (rc_dsm_is_new_data()) {
-      // Skip the first run to let data history fill up
-      if (first_run) {
-        prev_switch_val = rc_dsm_ch_normalized(SWITCH_CHANNEL);
-        first_run = false;
-        continue;
-      }
+    std::this_thread::sleep_for(READY_CHECK_SLEEP_TIME);  // Run at 100 Hz
 
-      float switch_val = rc_dsm_ch_normalized(SWITCH_CHANNEL);
-      if (std::abs(switch_val - prev_switch_val) > SWITCH_THRESHOLD_VAL) {
-        toggle_count++;
-      }
-      prev_switch_val = switch_val;
+    auto rc_channel_data = RemoteController::get_instance().get_channel_values();
+    if (rc_channel_data.empty()) {
+      continue;
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(READY_CHECK_SLEEP_TIME_US));  // Run at 100 Hz
-    loop_count++;
+    std::call_once(first_run, [&]() { prev_switch_val = rc_channel_data[kRC_KILL_SWITCH_INDEX]; });
+    float switch_val = rc_channel_data[kRC_KILL_SWITCH_INDEX];
+
+    if (std::abs(switch_val - prev_switch_val) > SWITCH_THRESHOLD_VAL) {
+      toggle_count++;
+    }
+
+    prev_switch_val = switch_val;
   }
 
   // Make sure the kill switch disengaged before starting
-  float switch_val = rc_dsm_ch_normalized(SWITCH_CHANNEL);
-  while (switch_val < SWITCH_THRESHOLD_VAL && rc_get_state() != EXITING) {
-    if (rc_dsm_is_new_data()) {
-      switch_val = rc_dsm_ch_normalized(SWITCH_CHANNEL);
-    }
-    std::this_thread::sleep_for(std::chrono::microseconds(READY_CHECK_SLEEP_TIME_US));
+  while (rc_get_state() != EXITING &&
+         RemoteController::get_instance().get_channel_values()[kRC_KILL_SWITCH_INDEX] < SWITCH_THRESHOLD_VAL) {
+    std::this_thread::sleep_for(READY_CHECK_SLEEP_TIME);
   }
 
   if (rc_get_state() != EXITING) {
@@ -85,11 +75,9 @@ bool wait_for_start_signal() {
     rc_led_set(RC_LED_RED, 0);
   } else {
     spdlog::warn("Received shutdown signal during ready check!");
-    rc_dsm_cleanup();
     return false;
   }
 
-  rc_dsm_cleanup();
   return true;
 }
 

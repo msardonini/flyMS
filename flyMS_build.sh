@@ -6,7 +6,7 @@ function print_usage {
   echo "flyMS_build.sh"
   echo "  Builds the flyMS flight program from a docker container. Build artifacts are placed in the local 'build'"
   echo "  directory."
-  ehco ""
+  echo ""
   echo "Usage:"
   echo "  ./flyMS_build.sh [OPTIONS] "
   echo "    OPTIONS:"
@@ -14,7 +14,7 @@ function print_usage {
   echo "      -d                      Builds with debugging symbols on"
   echo "      -b                      Builds Docker Image for Build Environment. "
   echo "                              This needs to be run once before flyMS can be built"
-  echo "      -h                      Prints this help menu and exits"
+  echo "      -h, --help              Prints this help menu and exits"
   echo "      --test                  Builds and runs the unit tests. This option will build for x84_64"
   echo "                              architecture and save the outputs in a local 'build_x86' directory"
   echo "      --address {address}     Specify the IP address of the beaglebone to send outputs to."
@@ -82,7 +82,7 @@ BUILD_FOLDER="build"
 
 # Parse command line arguments
 # Call getopt to validate the provided input.
-options=$(getopt -o cbhd --long address: --long config: --long test --long dev -- "$@")
+options=$(getopt -o cbhd --long address: --long config: --long test --long dev --long help -- "$@")
 [ $? -eq 0 ] || {
   echo "Incorrect options provided"
   exit 1
@@ -101,6 +101,11 @@ while true; do
     DEBUG_COMMAND="-d"
     ;;
   -h)
+    # prints the help menu and exit
+    print_usage
+    exit 0
+    ;;
+  --help)
     # prints the help menu and exit
     print_usage
     exit 0
@@ -169,6 +174,9 @@ if [ -n "$ADDRESS" ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
 
   # rsync the files over
   rsync -auv --info=progress2 products/ debian@$ADDRESS:/home/debian/
+
+  # Execute the post install script
+  ssh debian@$ADDRESS 'bash -s' < ./scripts/post_install.sh
 
   rm_output_folder
 fi

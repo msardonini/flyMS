@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "flyMS/hardware/RemoteController.h"
 #include "flyMS/util/debug_mode.h"
 #include "rc/start_stop.h"
 #include "spdlog/fmt/ostr.h"
@@ -63,8 +64,10 @@ bool FlightCore::init() {
   // Blocks execution until a packet is received
   if constexpr (!kDEBUG_MODE) {
     setpoint_module_.wait_for_data_packet();
-  }
 
+    // Command the state variable be set to EXITING if the RC loses connection
+    RemoteController::get_instance().packet_loss_callback([]() { rc_set_state(EXITING); });
+  }
   // Tell the system that we are running if we are in the predicted UNINITIALIZED state. Else shutdown
   if (rc_get_state() == UNINITIALIZED) {
     rc_set_state(RUNNING);
@@ -95,7 +98,6 @@ bool FlightCore::init() {
     spdlog::error("Failed to get access to PRU");
     return false;
   }
-
   // Start the flight program
   std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
   imu_module_.init(config_params_["imu_params"], func);
@@ -341,10 +343,7 @@ void FlightCore::init_logging(const std::filesystem::path &log_location) {
 
   // Initialize spdlog
   std::vector<spdlog::sink_ptr> sinks;
-  // Only use the console sink if we are in debug mode
-  if constexpr (kDEBUG_MODE) {
-    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-  }
+  sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
   int max_bytes = 1048576 * 20;  // Max 20 MB
   int max_files = 20;
   sinks.push_back(

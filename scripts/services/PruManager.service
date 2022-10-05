@@ -1,7 +1,7 @@
 [Unit]
 Description=PruManager, owner and distriber of who gets access to use the PRU hardware
 Requires=systemd-modules-load.service
-After=network.target robotcontrol.service dbus-org.freedesktop.Avahi.service redis.service generic-board-startup.service redis.service
+After=network.target robotcontrol.service dbus-org.freedesktop.Avahi.service redis.service generic-board-startup.service redis.service mem_permissions.service
 
 [Service]
 Type=simple

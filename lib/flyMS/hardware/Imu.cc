@@ -13,6 +13,7 @@
 
 #include <iostream>
 
+#include "flyMS/util/debug_mode.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 
@@ -66,8 +67,11 @@ int Imu::init(const YAML::Node &config, std::function<void(StateData &)> &user_f
   conf.gpio_interrupt_pin_chip = 3;
   conf.gpio_interrupt_pin = 21;
   conf.enable_magnetometer = 1;
-  conf.dmp_interrupt_sched_policy = SCHED_FIFO;
-  conf.dmp_interrupt_priority = 99;
+
+  if constexpr (!kDEBUG_MODE) {
+    conf.dmp_interrupt_sched_policy = SCHED_FIFO;
+    conf.dmp_interrupt_priority = 99;
+  }
   conf.dmp_fetch_accel_gyro = 1;
   conf.dmp_sample_rate = LOOP_FREQUENCY;
   conf.orient = ORIENTATION_Z_UP;
