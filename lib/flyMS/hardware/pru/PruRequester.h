@@ -83,12 +83,13 @@ class PruRequester {
     redis_publisher_.publish(kredis_request_channel, to_yaml(request));
     std::unique_lock<std::mutex> lock(cv_mutex_);
     if (!cv_.wait_for(lock, kPOLL_TIMEOUT, [this]() { return response_received_; })) {
-      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruHandler running?");
+      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruManager running?");
     }
     response_received_ = false;
 
     if (response_.success) {
       has_ownership_of_pru_ = true;
+      rc_servo_init();
       return true;
     } else {
       spdlog::error("Could not get access to PRU. Reason: {}", response_.reason);
@@ -104,16 +105,18 @@ class PruRequester {
    * @return false Release was unsuccessful
    */
   bool release_access() {
+    rc_servo_cleanup();
+    has_ownership_of_pru_ = false;
+
     PruRequest request{.pid = getpid()};
     redis_publisher_.publish(kredis_release_channel, to_yaml(request));
     std::unique_lock<std::mutex> lock(cv_mutex_);
     if (!cv_.wait_for(lock, kPOLL_TIMEOUT, [this]() { return response_received_; })) {
-      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruHandler running?");
+      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruManager running?");
     }
     response_received_ = false;
 
     if (response_.success) {
-      has_ownership_of_pru_ = false;
       return true;
     } else {
       throw std::runtime_error("Could not release access to PRU. Reason: " + response_.reason);
@@ -144,11 +147,14 @@ class PruRequester {
   void redis_callback(std::string_view channel, std::string_view message) {
     // TODO handle channels differently
     if (channel == std::string(kredis_request_response_channel)) {
+      spdlog::info("Received request response");
       response_ = from_yaml<PruResponse>(YAML::Load(message.data()));
       response_received_ = true;
       cv_.notify_one();
     } else if (channel == std::string(kredis_release_response_channel)) {
+      spdlog::info("Received release response");
       response_ = from_yaml<PruResponse>(YAML::Load(message.data()));
+      spdlog::info("{}", response_.reason);
       response_received_ = true;
       cv_.notify_one();
     } else {

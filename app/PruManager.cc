@@ -29,6 +29,7 @@ void init_signal_handler() {
 }
 
 int main() {
+  spdlog::set_level(spdlog::level::debug);
   init_signal_handler();
   flyMS::PruManager zero_sender;
 

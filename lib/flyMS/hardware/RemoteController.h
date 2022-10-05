@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -60,6 +61,22 @@ class RemoteController {
    */
   bool has_received_data() const;
 
+  /**
+   * @brief If we lose connection with the remote controller, we likely want to stop the system. This function spawns a
+   * thread that monitors the connection, and invokes the callback if the connection is lost.
+   *
+   * @param callback Callback function to invoke if the connection with the remote controller is lost. This should
+   * likely shut down the system.
+   */
+  void packet_loss_callback(std::function<void()> callback);
+
+  /**
+   * @brief Shuts down the thread that monitors for packet loss. The callback will no longer be invoked if the
+   * connection is lost.
+   *
+   */
+  void stop_packet_loss_monitoring();
+
  private:
   /**
    * @brief Construct a new Remote Controller object. Private because this is a singleton.
@@ -98,6 +115,8 @@ class RemoteController {
   std::mutex rc_mutex_;                    //< Mutex to protect the rc_data_ variable
   std::atomic<bool> is_running_;           //< Flag to indicate if the connection monitor thread is running
   std::thread connection_monitor_thread_;  //< Thread to monitor the connection to the remote controller
+  std::function<void()>
+      packet_loss_callback_;  //< Callback function to invoke if the connection to the remote controller is lost
 };
 
 }  // namespace flyMS

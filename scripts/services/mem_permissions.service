@@ -1,0 +1,11 @@
+[Unit]
+Description=Give memory group read/write permissions so the flyMS program can send servo pulses with the PRU hardware
+After=network.target generic-board-startup.service
+
+[Service]
+User=root
+Restart=always
+ExecStart=chmod g+rw /dev/mem
+
+[Install]
+WantedBy=multi-user.target

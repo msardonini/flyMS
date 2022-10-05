@@ -18,7 +18,7 @@ namespace flyMS {
  * overhead in the production binary
  *
  */
-#ifdef DEBUG
+#ifdef DEBUG_FLYMS
 static constexpr bool kDEBUG_MODE = true;
 #else
 static constexpr bool kDEBUG_MODE = false;

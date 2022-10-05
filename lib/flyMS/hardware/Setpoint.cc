@@ -59,7 +59,14 @@ SetpointData Setpoint::get_setpoint_data() {
   auto& remote = RemoteController::get_instance();
   auto rc_channel_data = remote.get_channel_values();
 
-  std::scoped_lock<std::mutex> lock(*setpoint_mutex_);
+  if (rc_channel_data.empty()) {
+    if constexpr (kDEBUG_MODE) {  // In Debug mode this is OK
+      return {};
+    } else {
+      throw std::runtime_error("No RC data received! Should have data by now");
+    }
+  }
+
   // Set roll/pitch reference value
   // DSM2 Receiver is inherently positive to the left
   if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode

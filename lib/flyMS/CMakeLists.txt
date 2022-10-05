@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 
-# Build with DEBUG defined if we are in Debug mode
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-  add_definitions(-DDEBUG)
-endif()
-
 add_subdirectory(hardware)
 add_subdirectory(util)
 add_subdirectory(ipc)
@@ -44,6 +39,14 @@ install(TARGETS flyMS_lib flyMS_util flyMS_hardware
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib/static)
+
+# Build with DEBUG defined if we are in Debug mode
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+  target_compile_definitions(flyMS_lib
+    PUBLIC
+      -DDEBUG_FLYMS
+    )
+endif()
 
 
 if(BUILD_TESTS)

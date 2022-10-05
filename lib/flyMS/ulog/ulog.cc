@@ -155,6 +155,12 @@ ULog::~ULog() {
 }
 
 std::filesystem::path ULog::generate_incremented_run_dir(const std::filesystem::path &log_folder) {
+  if (!std::filesystem::exists(log_folder)) {
+    if (!std::filesystem::create_directories(log_folder)) {
+      throw std::runtime_error("Could not create base log directory");
+    }
+  }
+
   auto get_run_str = [](const int run_number) { return fmt::format("run{:03d}", run_number); };
 
   int run_number = 1;

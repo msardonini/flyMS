@@ -19,3 +19,11 @@ target_include_directories(flyMS_hardware
   PUBLIC
     ${FLYMS_LIBRARY_ROOT}
 )
+
+# Build with DEBUG defined if we are in Debug mode
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+  target_compile_definitions(flyMS_hardware
+    PUBLIC
+      -DDEBUG_FLYMS
+    )
+endif()
