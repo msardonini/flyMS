@@ -129,14 +129,14 @@ class FlightCore {
 
   Setpoint setpoint_module_;                //< Object and Data struct from the setpoint manager
   AttitudeController attitude_controller_;  //< Converts desired setpoint data & state data to state control signals
-  std::unique_ptr<MavlinkRedisSubQueue> mavlink_subscriber_;        //< Receive mavlink messages from Redis
-  std::shared_ptr<RedisQueue<mavlink_odometry_t>> odometry_queue_;  //< A shared queue to receive odometry data
   PositionController position_controller_;  //< Controller for position when flying using flyStereo
   PruRequester pru_requester_;              //< Object to handle ownership of the PRU with the PruHandler
+  DigitalFilter gyro_lpf_pitch_;            //< Low pass filter for imu pitch measurement
+  DigitalFilter gyro_lpf_roll_;             //< Low pass filter for imu roll measurement
+  DigitalFilter gyro_lpf_yaw_;              //< Low pass filter for imu yaw measurement
 
-  DigitalFilter gyro_lpf_pitch_;
-  DigitalFilter gyro_lpf_roll_;
-  DigitalFilter gyro_lpf_yaw_;
+  std::unique_ptr<MavlinkRedisSubQueue> mavlink_subscriber_;        //< Receive mavlink messages from Redis
+  std::shared_ptr<RedisQueue<mavlink_odometry_t>> odometry_queue_;  //< A shared queue to receive odometry data
 };
 
 }  // namespace flyMS

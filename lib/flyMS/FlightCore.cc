@@ -158,9 +158,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     console_print(imu_data_body, setpoints, u);
   }
 
-  /************************************************************************
-   *               Log Important Flight Data For Analysis              *
-   ************************************************************************/
+  // Log Important Flight Data For Analysis
   struct ULogFlightMsg flight_msg {
     imu_data_body.timestamp_us, imu_data_body, setpoints, u, att_ctrl
   };

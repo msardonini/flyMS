@@ -11,6 +11,8 @@
  */
 #include "flyMS/hardware/pru/PruManager.h"
 
+#include <signal.h>
+
 #include <thread>
 
 bool is_running = true;

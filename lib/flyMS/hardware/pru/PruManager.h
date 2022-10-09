@@ -9,7 +9,6 @@
  *
  */
 #include <signal.h>
-#include <unistd.h>
 
 #include <atomic>
 #include <filesystem>
@@ -20,6 +19,7 @@
 #include "flyMS/hardware/pru/pru_messages.h"
 #include "flyMS/ipc/redis/RedisPublisher.h"
 #include "flyMS/ipc/redis/RedisSubscriber.h"
+#include "flyMS/util/pid_file.h"
 #include "rc/servo.h"
 #include "yaml-cpp/yaml.h"
 
@@ -65,11 +65,9 @@ class PruManager {
    */
   PruManager()
       : redis_subscriber_(std::bind(&PruManager::on_message, this, std::placeholders::_1, std::placeholders::_2),
-                          {kredis_request_channel, kredis_release_channel}) {
+                          {kredis_request_channel, kredis_release_channel}),
+        pid_file_(kPID_FILE_PRU) {
     // Ensure there is only one instance of this program running system-wide
-    if (!pid_handler(kPID_FILE_PRU)) {
-      throw std::runtime_error("Could not create PID file for PruManager.");
-    }
     redis_subscriber_.set_error_callback([](const sw::redis::Error &er) {});  // ignore timeouts, they are expected
 
     // Initialize the PRU hardware
@@ -87,49 +85,6 @@ class PruManager {
   PruManager &operator=(PruManager &&) = delete;
 
  private:
-  /**
-   * @brief Function to handle the PID file for this program. This ensures that only one instance of this program is
-   * running system-wide. This will create a PID file at the location provided. If the PID file already exists and there
-   * is a process with that PID, this function will return false. Otherwise, it will create the PID file and return
-   * true.
-   *
-   * @param pid_file Path to the PID file to create.
-   * @return true The pid file was created successfully
-   * @return false There was an error creating the PID file
-   */
-  bool pid_handler(const std::filesystem::path &pid_file_path) {
-    if (std::filesystem::exists(pid_file_path)) {
-      std::ifstream pid_file(pid_file_path);
-      int pid;
-      pid_file >> pid;
-      pid_file.close();
-
-      // Check if there is a process running with this PID
-      if (kill(pid, 0) == 0) {
-        spdlog::error("Cannot start PruManager, another instance is already running.");
-        return false;
-      } else {
-        spdlog::warn("Removing stale PID file for PruManager.");
-        if (!std::filesystem::remove(pid_file_path)) {
-          spdlog::error("Could not remove stale PID file for PruManager. Do you have permission?");
-          return false;
-        }
-      }
-    }
-
-    // Create the PID file
-    std::ofstream pid_file(pid_file_path);
-    pid_file << getpid();
-    pid_file.close();
-
-    if (!pid_file) {
-      spdlog::error("Could not create the PID file for PruManager. Do you have permission?");
-      return false;
-    } else {
-      return true;
-    }
-  }
-
   /**
    * @brief Sends zeros to the PRU. This is intended to be used when nothing is connected to the PRU. This prevents ESCs
    * from chirping / complaining that they receive no signal while the flyMS program is not running
@@ -274,6 +229,8 @@ class PruManager {
                                        // to the PRU when nothing is connected to it
   std::atomic<bool> is_running_zero_sender_{false};  //< Flag to indicate if the zero sender thread is running
   std::atomic<bool> is_running_pid_monitor_{false};  //< Flag to indicate if the zero sender thread is running
+
+  PidFile pid_file_;  //< PidFile object to monitor unique running instances of this program
 };
 
 }  // namespace flyMS

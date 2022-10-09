@@ -16,11 +16,13 @@
 #include "flyMS/FlightCore.h"
 #include "flyMS/util/config_requestor.h"
 #include "flyMS/util/debug_mode.h"
+#include "flyMS/util/pid_file.h"
 #include "flyMS/util/ready_check.h"
 #include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
 
+constexpr char kFLYMS_PID_PATH[] = "//home/debian/.flyMS/flyMS.pid";
 constexpr char kCONFIG_URI[] = "http://localhost:5001/config";
 
 /**
@@ -74,6 +76,9 @@ int main() {
   init_signal_handler();
 
   try {
+    // Create a PID file for this process
+    flyMS::PidFile pid_file(kFLYMS_PID_PATH);
+
     if constexpr (flyMS::kDEBUG_MODE) {
       spdlog::info("Debug mode enabled");
       spdlog::set_level(spdlog::level::debug);
