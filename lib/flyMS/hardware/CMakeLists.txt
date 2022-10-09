@@ -2,7 +2,6 @@
 add_library(flyMS_hardware STATIC
   gps.cc
   Imu.cc
-  Setpoint.cc
   RemoteController.cc
 )
 

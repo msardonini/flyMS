@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "rc/dsm.h"
+#include "rc/start_stop.h"
 #include "spdlog/spdlog.h"
 
 namespace flyMS {
@@ -11,7 +12,8 @@ namespace flyMS {
 static constexpr uint32_t kCONNECTION_MONITOR_LOOP_FRQ = 10;
 static constexpr auto kCONNECTION_MONITOR_LOOP_SLEEP_TIME =
     std::chrono::microseconds(1000000 / kCONNECTION_MONITOR_LOOP_FRQ);
-static constexpr uint32_t kCONNECTION_MONITOR_TIMEOUT_NS = 1000000000;  //< 1 second
+static constexpr uint32_t kCONNECTION_MONITOR_TIMEOUT_NS = 1000000000;                      //< 1 second
+static constexpr auto kWAIT_FOR_DATA_PACKET_SLEEP_TIME = std::chrono::microseconds(10000);  //< 10 ms, this is polled
 
 RemoteController& RemoteController::get_instance() {
   static RemoteController instance;
@@ -33,7 +35,17 @@ RemoteController::~RemoteController() {
 
 bool RemoteController::has_received_data() const { return !rc_data_.empty(); }
 
-std::vector<float> RemoteController::get_channel_values() {
+bool RemoteController::wait_for_data_packet() {
+  while (!has_received_data()) {
+    if (rc_get_state() == EXITING) {
+      return false;
+    }
+    std::this_thread::sleep_for(std::chrono::microseconds(kWAIT_FOR_DATA_PACKET_SLEEP_TIME));
+  }
+  return true;
+}
+
+std::vector<float> RemoteController::get_channel_data() {
   std::scoped_lock<std::mutex> lock(rc_mutex_);
   return rc_data_;
 }

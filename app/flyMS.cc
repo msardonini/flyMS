@@ -21,6 +21,8 @@
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
 
+constexpr char kCONFIG_URI[] = "http://localhost:5001/config";
+
 /**
  * @brief Callback function for signals. SIGHUP (hangup signal) is ignored, others will stop the program
  *
@@ -74,6 +76,7 @@ int main() {
   try {
     if constexpr (flyMS::kDEBUG_MODE) {
       spdlog::info("Debug mode enabled");
+      spdlog::set_level(spdlog::level::debug);
     } else {
       spdlog::info("Debug mode disabled");
     }
@@ -85,7 +88,7 @@ int main() {
     }
 
     // Load the Yaml Node
-    YAML::Node config_params = flyMS::get_config("http://localhost:5001/config");
+    YAML::Node config_params = flyMS::get_config(kCONFIG_URI);
     if (config_params.size() == 0) {
       shutdown_fail();
       return -1;
@@ -95,16 +98,13 @@ int main() {
 
     rc_set_state(UNINITIALIZED);
     flyMS::FlightCore fly(config_params);
-    spdlog::info("get state is {}", rc_get_state());
     // Initialize the flight hardware
     if (!fly.init()) {
-      spdlog::info("fail {}", rc_get_state());
       rc_set_state(EXITING);
       spdlog::error("Startup failed, exiting");
       shutdown_fail();
       return -1;
     } else {
-      spdlog::info("success {}", rc_get_state());
       rc_led_set(RC_LED_GREEN, 1);
       rc_led_set(RC_LED_RED, 0);
     }

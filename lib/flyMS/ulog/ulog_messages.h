@@ -13,7 +13,6 @@
 #include <array>
 #include <cstdint>
 
-#include "flyMS/hardware/Setpoint.h"  // TODO reorganize where this lives
 #include "flyMS/types/state_data.h"
 
 namespace flyMS {
@@ -39,25 +38,25 @@ struct ULogMsg {
 struct ULogFlightMsg : public ULogMsg {
   ULogFlightMsg() = default;
 
-  ULogFlightMsg(uint64_t timestamp_us, const StateData &state, const SetpointData &setpoint,
-                const std::array<float, 4> &u, const std::array<float, 3> u_euler)
-      : data(timestamp_us, state, setpoint, u, u_euler) {}
+  ULogFlightMsg(uint64_t timestamp_us, const StateData &state, const std::vector<float> &setpoints,
+                const std::vector<float> &u, const std::vector<float> &u_euler)
+      : data(timestamp_us, state, setpoints, u, u_euler) {}
 
   /**
    * @brief The data fields that are recorded for the ULogFlightMsg. This struct is in serializable format
    *
    */
   struct ULogFlightMsgData {
-    ULogFlightMsgData(uint64_t timestamp_us, const StateData &state, const SetpointData &setpoint,
-                      const std::array<float, 4> &u, const std::array<float, 3> u_euler)
+    ULogFlightMsgData(uint64_t timestamp_us, const StateData &state, const std::vector<float> &setpoints,
+                      const std::vector<float> &u, const std::vector<float> &u_euler)
         : timestamp_us(timestamp_us),
           RPY{state.euler(0), state.euler(1), state.euler(2)},
           gyro{state.gyro(0), state.gyro(1), state.gyro(2)},
           gyro_filt{state.eulerRate(0), state.eulerRate(1), state.eulerRate(2)},
           accel{state.accel(0), state.accel(1), state.accel(2)},
           motor_cmds{u[0], u[1], u[2], u[3]},
-          u{u_euler[0], u_euler[1], u_euler[2], setpoint.throttle},
-          RPY_ref{setpoint.euler_ref[0], setpoint.euler_ref[1], setpoint.euler_ref[2]} {}
+          u{u_euler[0], u_euler[1], u_euler[2], u_euler[3]},
+          RPY_ref{setpoints[1], setpoints[2], setpoints[3]} {}
 
     uint64_t timestamp_us;  //< Timestamp in microseconds
     float RPY[3];           //< Roll, pitch, yaw in radians

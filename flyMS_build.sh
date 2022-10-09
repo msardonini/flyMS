@@ -173,7 +173,7 @@ if [ -n "$ADDRESS" ] && [ $BUILD_AND_RUN_TESTS_LOCALLY -eq 0 ]; then
   fi
 
   # rsync the files over
-  rsync -auv --info=progress2 products/ debian@$ADDRESS:/home/debian/
+  rsync -auv --update --info=progress2 products/ debian@$ADDRESS:/home/debian/
 
   # Execute the post install script
   ssh debian@$ADDRESS 'bash -s' < ./scripts/post_install.sh

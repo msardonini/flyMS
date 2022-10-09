@@ -73,6 +73,13 @@ class DigitalFilter {
    */
   void zero_values();
 
+  /**
+   * @brief Sets all the values of the filtered and unfiltered output states to a value. Helpful to avoid step inputs
+   *
+   * @param val
+   */
+  void set_to_value(double val);
+
  private:
   /**
    * @brief Checks the objects values to make sure they are as expected. Run on initialization

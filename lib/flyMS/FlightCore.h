@@ -27,13 +27,13 @@
 #include <thread>
 #include <vector>
 
-#include "flyMS/DigitalFilter.hpp"
+#include "flyMS/AttitudeController.h"
+#include "flyMS/controller/DigitalFilter.hpp"
+#include "flyMS/controller/Setpoint.h"
 #include "flyMS/hardware/Imu.h"
-#include "flyMS/hardware/Setpoint.h"
 #include "flyMS/hardware/gps.h"
 #include "flyMS/hardware/pru/PruRequester.h"
 #include "flyMS/ipc/mavlink/MavlinkRedisSubQueue.h"
-#include "flyMS/position_generator.h"
 #include "flyMS/types/flight_mode.h"
 #include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
@@ -79,23 +79,17 @@ class FlightCore {
  private:
   /**
    * @brief Main control loop calculation for the flight stack. This function is registered to the Imu object as a
-   * callback which gets invoked every time the IMU signals data is available to procoess
+   * callback which gets invoked every time the IMU signals data is available to process
    *
    * @param imu_data_body
    */
   void flight_core(StateData &imu_data_body);
 
   /**
-   * @brief Zeros the data stored in the PID controllers, helps reset the integrator
-   *
-   */
-  void zero_pids();
-
-  /**
-   * @brief Initializes all logging for flyMS. First, it creates a unique log directory 'runXXX' (datatime not used
+   * @brief Initializes all logging for flyMS. First, it creates a unique log directory 'runXXX' (datetime not used
    * because it is typically not synced). Then in initialized spdlog, then ulog
    *
-   * @param log_dir locaation to store log directories
+   * @param log_dir location to store log directories
    */
   void init_logging(const std::filesystem::path &log_location);
 
@@ -104,16 +98,27 @@ class FlightCore {
    *
    * @param imu_data_body imu data in body frame
    * @param setpoint setpoint data
-   * @return int
    */
-  int console_print(const StateData &imu_data_body, const SetpointData &setpoint, const std::array<float, 4> &u);
+  void console_print(const StateData &imu_data_body, const std::vector<float> &setpoints, const std::vector<float> &u);
+
+  /**
+   * @brief Apply a saturation filter on motor command data. If any of the motor outputs are greater than 1, decrease
+   * the set of commands evenly
+   *
+   * @param u The motor commands
+   */
+  void output_saturation_filter(std::vector<float> &u);
+
+  // Configurable parameters
+  FlightMode flight_mode_;    // TODO remove this from flight core
+  std::string log_filepath_;  //< The filepath to the logging directory
+  YAML::Node config_params_;  //< A copy of the yaml configuration
 
   // Variables for working with flyStereo
   bool flyStereo_running_ = false;
   bool flyStereo_streaming_data_ = false;
   float standing_throttle_ = 0.0f;
   float initial_yaw_ = 0.0f;
-  PositionGenerator position_generator_;
 
   // Counter for number of timestamps at min throttle, used to detect landing
   // and reset the integrators in the PID controllers
@@ -122,28 +127,16 @@ class FlightCore {
   Imu &imu_module_;  //< Reference to Imu singleton object and Data struct from the imu manager
   ULog ulog_;        //< Class to handle and write to the log file
 
-  Setpoint setpoint_module_;                                        //< Object and Data struct from the setpoint manager
+  Setpoint setpoint_module_;                //< Object and Data struct from the setpoint manager
+  AttitudeController attitude_controller_;  //< Converts desired setpoint data & state data to state control signals
   std::unique_ptr<MavlinkRedisSubQueue> mavlink_subscriber_;        //< Receive mavlink messages from Redis
   std::shared_ptr<RedisQueue<mavlink_odometry_t>> odometry_queue_;  //< A shared queue to receive odometry data
   PositionController position_controller_;  //< Controller for position when flying using flyStereo
   PruRequester pru_requester_;              //< Object to handle ownership of the PRU with the PruHandler
 
-  DigitalFilter roll_inner_PID_;
-  DigitalFilter roll_outer_PID_;
-  DigitalFilter pitch_inner_PID_;
-  DigitalFilter pitch_outer_PID_;
-  DigitalFilter yaw_PID_;
   DigitalFilter gyro_lpf_pitch_;
   DigitalFilter gyro_lpf_roll_;
   DigitalFilter gyro_lpf_yaw_;
-
-  // Configurable parameters
-  FlightMode flight_mode_;                   //< The current flight mode
-  std::array<float, 3> max_control_effort_;  //< Maximum values allowed to to exert in each euler angle DoF
-  std::string log_filepath_;                 //< The filepath to the logging directory
-  YAML::Node config_params_;                 //< A copy of the yaml configuration
-
-  DigitalFilter *test_filter;
 };
 
 }  // namespace flyMS

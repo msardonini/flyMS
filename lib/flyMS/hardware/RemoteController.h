@@ -46,12 +46,12 @@ class RemoteController {
   static RemoteController &get_instance();
 
   /**
-   * @brief Get the channel values object. The values are normalized to the range [-1, 1]. The provided indexes can help
+   * @brief Get the channel values. The values are normalized to the range [-1, 1]. The provided indexes can help
    * identify which channel is which, e.g. kRC_THROTTLE_INDEX, kRC_ROLL_INDEX, etc.
    *
    * @return std::vector<float>
    */
-  std::vector<float> get_channel_values();
+  std::vector<float> get_channel_data();
 
   /**
    * @brief Check if the remote controller has received a single packet of data since being instantiated
@@ -76,6 +76,14 @@ class RemoteController {
    *
    */
   void stop_packet_loss_monitoring();
+
+  /**
+   * @brief Blocks execution until a data packet is received. Also exits if rc_get_state() == EXITINGi
+   *
+   * @return true If a data packet is received
+   * @return false If rc_get_state() == EXITING, indicating an interrupt
+   */
+  bool wait_for_data_packet();
 
  private:
   /**

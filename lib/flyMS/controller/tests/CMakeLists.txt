@@ -1,8 +1,7 @@
 
 add_executable(flyMS_tests
   DigitalFilter_tests.cc
-  ../DigitalFilter.cc
-)
+  )
 
 target_include_directories(flyMS_tests
   PUBLIC
@@ -13,5 +12,5 @@ target_link_libraries(flyMS_tests
   PRIVATE
     gtest
     gtest_main
-    flyMS_lib
+    flyMS_controller
 )

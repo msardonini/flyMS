@@ -9,12 +9,12 @@
  *
  */
 
-#include "flyMS/position_controller.h"
+#include "flyMS/controller/position_controller.h"
 
 #include <algorithm>
 #include <iostream>
 
-#include "flyMS/hardware/Imu.h"
+#include "flyMS/controller/constants.h"
 
 namespace flyMS {
 
@@ -23,9 +23,9 @@ PositionController::PositionController(std::array<std::array<double, 3>, 2> pid_
                                        std::array<std::array<double, 3>, 2> pid_coeffs_z,
                                        std::array<float, 3> RPY_saturation_limits) {
   for (int i = 0; i < 2; i++) {
-    pid_[0][i] = generate_pid(pid_coeffs_x[i], 0.15, LOOP_DELTA_T);
-    pid_[0][i] = generate_pid(pid_coeffs_y[i], 0.15, LOOP_DELTA_T);
-    pid_[0][i] = generate_pid(pid_coeffs_z[i], 0.15, LOOP_DELTA_T);
+    pid_[0][i] = generate_pid(pid_coeffs_x[i], 0.15, kFLYMS_CONTROL_LOOP_DT);
+    pid_[0][i] = generate_pid(pid_coeffs_y[i], 0.15, kFLYMS_CONTROL_LOOP_DT);
+    pid_[0][i] = generate_pid(pid_coeffs_z[i], 0.15, kFLYMS_CONTROL_LOOP_DT);
   }
 
   // Conversion matrix to map roll, pitch, throttle commands from PID output in XYZ frame

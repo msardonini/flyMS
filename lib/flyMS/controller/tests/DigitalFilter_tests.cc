@@ -9,7 +9,7 @@
  *
  */
 
-#include "flyMS/DigitalFilter.hpp"
+#include "flyMS/controller/DigitalFilter.hpp"
 #include "gtest/gtest.h"
 
 TEST(DigitalFilterTests, LowPass) {

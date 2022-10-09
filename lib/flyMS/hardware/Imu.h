@@ -20,9 +20,6 @@
 
 namespace flyMS {
 
-constexpr uint32_t LOOP_FREQUENCY = 200;
-constexpr float LOOP_DELTA_T = 1.f / LOOP_FREQUENCY;
-
 /**
  * @brief Singleton class to communicate with the IMU. We use singleton because there is only one imu in hardware. This
  * class utilizes  the DMP (digital motion processor) on the MPU-9250 as a way to calculate orientation
@@ -50,10 +47,11 @@ class Imu {
    * @brief Initialize the Imu class
    *
    * @param config YAML configuration for the Imu class
+   * @param loop_frq Desired sampling rate in Hz of the IMU
    * @param func callback function to use when data is received
    * @return 0 on sucess, -1 on failure
    */
-  int init(const YAML::Node &config, std::function<void(StateData &)> &func);
+  int init(const YAML::Node &config, uint32_t loop_frq, std::function<void(StateData &)> &func);
 
  private:
   Imu() = default;

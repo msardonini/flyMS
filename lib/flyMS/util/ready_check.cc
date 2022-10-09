@@ -49,7 +49,7 @@ bool wait_for_start_signal() {
 
     std::this_thread::sleep_for(READY_CHECK_SLEEP_TIME);  // Run at 100 Hz
 
-    auto rc_channel_data = RemoteController::get_instance().get_channel_values();
+    auto rc_channel_data = RemoteController::get_instance().get_channel_data();
     if (rc_channel_data.empty()) {
       continue;
     }
@@ -65,7 +65,7 @@ bool wait_for_start_signal() {
 
   // Make sure the kill switch disengaged before starting
   while (rc_get_state() != EXITING &&
-         RemoteController::get_instance().get_channel_values()[kRC_KILL_SWITCH_INDEX] < SWITCH_THRESHOLD_VAL) {
+         RemoteController::get_instance().get_channel_data()[kRC_KILL_SWITCH_INDEX] < SWITCH_THRESHOLD_VAL) {
     std::this_thread::sleep_for(READY_CHECK_SLEEP_TIME);
   }
 

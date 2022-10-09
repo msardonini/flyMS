@@ -28,22 +28,23 @@ namespace flyMS {
 static constexpr int kNUM_PRU_CHANNELS = 4;
 static constexpr int kCOMMAND_FRQ_HZ = 200;  // Hz
 static constexpr auto kCOMMAND_THREAD_SLEEP_TIME = std::chrono::microseconds(1000000 / kCOMMAND_FRQ_HZ);
+static constexpr auto kPID_MONITOR_SLEEP_TIME = std::chrono::seconds(1);
 static const std::filesystem::path kPID_FILE_PRU(
     "/var/PruManager.pid");  //< PID file for PruManager, ensured only one instance is running
 
 /**
- * @brief Object to handle ownership of the Programmable Realtime Unit (PRU) and what is allowed to send commands to it.
+ * @brief Handle the ownership of the Programmable Realtime Unit (PRU) and what is allowed to send commands to it.
  * The PRU is used to send commands to the Electronic Speed Controllers (ESCs), which control the drone's motors.
  *
  * The PRU is primarily owned by this object, while it owns the PRU it commands zeros to the ESCs. This is because ESCs
  * will frequently complain if there is no signal sent to them.
  *
- * Other processes can request to use the PRU via PruRequster. This request is done via the PruRequester obect.
+ * Other processes can request to use the PRU via PruRequester. This request is done via the PruRequester object.
  * Internally, Redis publishers and subscribers are used for communication. If the PRU is not in use, the request is
  * granted. If the PRU is in use, the request is denied. The object that owns the PRU can return ownership to this
  * object, which is done in the destructor of PruRequester.
  *
- * This object is supposed to be instanted in a daemon, and kept alive while hardware is running.
+ * This object is supposed to be instantiated in a daemon, and kept alive while hardware is running.
  *
  * Example usage is:
  * ```
@@ -72,13 +73,11 @@ class PruManager {
     redis_subscriber_.set_error_callback([](const sw::redis::Error &er) {});  // ignore timeouts, they are expected
 
     // Initialize the PRU hardware
-    rc_servo_init();
-    owns_pru_ = true;
-    start_sending_zeros();
+    take_pru_ownership();
   }
   ~PruManager() {
     std::filesystem::remove(kPID_FILE_PRU);
-    stop_sending_zeros();
+    release_pru_ownership(false);
   }
 
   // This object is not copyable or movable
@@ -146,36 +145,10 @@ class PruManager {
   }
 
   /**
-   * @brief Stops the thread that sends zeros to the PRU
-   *
-   */
-  void stop_sending_zeros() {
-    spdlog::debug("Stopping zero sender thread.");
-    if (!owns_pru_) {
-      spdlog::warn("Instructed to stop sending zeros to PRU, but PRU is not owned.");
-      return;
-    }
-
-    is_running_zero_sender_ = false;
-    if (send_zero_thread_.joinable()) {
-      send_zero_thread_.join();
-    }
-    spdlog::debug("Stopped zero sender thread.");
-  }
-
-  /**
    * @brief Starts the thread that sends zeros to the PRU
    *
    */
-  void start_sending_zeros() {
-    spdlog::debug("Starting thread to send zeros to PRU.");
-    if (!owns_pru_) {
-      spdlog::warn("Instructed to start sending zeros, without ownership of the PRU.");
-      return;
-    }
-    is_running_zero_sender_ = true;
-    send_zero_thread_ = std::thread(&PruManager::send_zeros, this);
-  }
+  void start_sending_zeros() {}
 
   static void on_timeout(const sw::redis::Error &err) {}
 
@@ -198,9 +171,7 @@ class PruManager {
       if (owns_pru_) {
         process_id_sender_ = pru_request.pid;
         spdlog::info("Received request to own PRU from process with PID {}", pru_request.pid);
-        stop_sending_zeros();
-        rc_servo_cleanup();
-        owns_pru_ = false;
+        release_pru_ownership();
         response.success = true;
         response.reason = "success";
       } else {
@@ -214,9 +185,7 @@ class PruManager {
       PruResponse response;
       if (request.pid == process_id_sender_) {
         spdlog::info("Received request to release PRU from process with PID {}", request.pid);
-        owns_pru_ = true;
-        rc_servo_init();
-        start_sending_zeros();
+        take_pru_ownership();
         process_id_sender_ = -1;
         response.success = true;
         response.reason = "success";
@@ -231,13 +200,80 @@ class PruManager {
     }
   }
 
+  /**
+   * @brief Function to transistion states from not owning the PRU to owning the PRU
+   *
+   */
+  void take_pru_ownership() {
+    owns_pru_ = true;
+    rc_servo_init();
+    spdlog::debug("Starting thread to send zeros to PRU.");
+    if (!owns_pru_) {
+      spdlog::warn("Instructed to start sending zeros, without ownership of the PRU.");
+      return;
+    }
+    is_running_zero_sender_ = true;
+    send_zero_thread_ = std::thread(&PruManager::send_zeros, this);
+  }
+
+  /**
+   * @brief Function to transition states from owning the PRU to not owning the PRU
+   *
+   * @param start_pid_monitor optionally start the PID monitor thread
+   */
+  void release_pru_ownership(bool start_pid_monitor = true) {
+    spdlog::debug("Stopping zero sender thread.");
+    if (!owns_pru_) {
+      spdlog::warn("Instructed to stop sending zeros to PRU, but PRU is not owned.");
+      return;
+    }
+
+    is_running_zero_sender_ = false;
+    if (send_zero_thread_.joinable()) {
+      send_zero_thread_.join();
+    }
+    spdlog::debug("Stopped zero sender thread.");
+    rc_servo_cleanup();
+    owns_pru_ = false;
+
+    // Start the pid monitor thread to make sure the requesting process is running while it owns PRU. First make sure a
+    // previous thread has been joined
+    if (pid_monitor_thread_.joinable()) {
+      is_running_pid_monitor_ = false;
+      pid_monitor_thread_.join();
+    }
+    if (start_pid_monitor) {
+      spdlog::debug("Starting monitor thread.");
+      pid_monitor_thread_ = std::thread(&PruManager::pid_monitor_thread, this);
+    }
+  }
+
+  /**
+   * @brief Monitors the process that requested the ownership of the PRU. If the process dies without releasing the
+   *        PRU, this thread will log an error and release the PRU.
+   *
+   */
+  void pid_monitor_thread() {
+    is_running_pid_monitor_ = true;
+    while (is_running_pid_monitor_) {
+      if (kill(process_id_sender_, 0) != 0) {
+        spdlog::error("PID {} has shut down before releasing PRU. Releasing PRU manually.", process_id_sender_);
+        take_pru_ownership();
+        is_running_pid_monitor_ = false;
+      }
+      std::this_thread::sleep_for(kPID_MONITOR_SLEEP_TIME);
+    }
+  }
+
   RedisSubscriber redis_subscriber_;   //< Redis subscriber to listen for requests
   RedisPublisher redis_publisher_;     //< Redis publisher to send responses
   int process_id_sender_ = -1;         //< The process ID of the requesting process
   std::thread send_zero_thread_;       //< Thread for sending zeros to the PRU
+  std::thread pid_monitor_thread_;     //< Thread for sending zeros to the PRU
   std::atomic<bool> owns_pru_{false};  //< Flag to indicate if this object owns the PRU. This is also used to send zeros
                                        // to the PRU when nothing is connected to it
   std::atomic<bool> is_running_zero_sender_{false};  //< Flag to indicate if the zero sender thread is running
+  std::atomic<bool> is_running_pid_monitor_{false};  //< Flag to indicate if the zero sender thread is running
 };
 
 }  // namespace flyMS

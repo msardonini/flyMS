@@ -128,12 +128,13 @@ class PruRequester {
    *
    * @param command The command to send to the PRU
    */
-  void send_command(std::array<float, 4>& commands) {
+  void send_command(std::vector<float>& commands) {
     if (!has_ownership_of_pru_) {
       throw std::runtime_error("Cannot send command to PRU. Do not have ownership of PRU.");
     }
-    for (auto chan = 0ul; chan < commands.size(); ++chan) {
-      rc_servo_send_esc_pulse_normalized(chan, commands[chan]);
+    int channel = 1;
+    for (const auto& cmd : commands) {
+      rc_servo_send_esc_pulse_normalized(channel++, cmd);
     }
   }
 

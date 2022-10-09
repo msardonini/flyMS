@@ -57,7 +57,7 @@ void Imu::dmp_callback() {
   user_func_(imu_data_body);
 }
 
-int Imu::init(const YAML::Node &config, std::function<void(StateData &)> &user_func) {
+int Imu::init(const YAML::Node &config, uint32_t loop_frq, std::function<void(StateData &)> &user_func) {
   // Load the transform from imu to body frame
   R_imu_body_ = Eigen::Matrix<float, 3, 3, Eigen::RowMajor>(config["R_imu_body"].as<std::array<float, 9> >().data());
   R_imu_body_dmp_ = R_imu_body_;
@@ -73,7 +73,7 @@ int Imu::init(const YAML::Node &config, std::function<void(StateData &)> &user_f
     conf.dmp_interrupt_priority = 99;
   }
   conf.dmp_fetch_accel_gyro = 1;
-  conf.dmp_sample_rate = LOOP_FREQUENCY;
+  conf.dmp_sample_rate = loop_frq;
   conf.orient = ORIENTATION_Z_UP;
 
   // Check our DCM for the proper orientation config parameter
