@@ -27,7 +27,7 @@
 #include <thread>
 #include <vector>
 
-#include "flyMS/AttitudeController.h"
+#include "flyMS/controller/AttitudeController.h"
 #include "flyMS/controller/DigitalFilter.hpp"
 #include "flyMS/controller/Setpoint.h"
 #include "flyMS/hardware/Imu.h"
