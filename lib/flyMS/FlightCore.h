@@ -46,7 +46,7 @@ namespace flyMS {
 static constexpr char kFLY_STEREO_CHANNEL[] = "mission_mavlink_data";
 
 /**
- * @brief Object responsible for the inner loop of the flight controller
+ * @brief Object responsible for the inner loop of the flight controller.
  *
  */
 class FlightCore {

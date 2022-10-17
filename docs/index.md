@@ -19,4 +19,5 @@ api_reference/ipc.md
 api_reference/flyMS_docs.md
 api_reference/logging.md
 api_reference/hardware.md
+api_reference/controller.md
 ```

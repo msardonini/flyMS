@@ -35,15 +35,46 @@ struct AttitudeControllerConfig {
       );
 };
 
+/**
+ * @brief Execute the PID controllers for the system, and convert the system's measured state and desired state to
+ * control commands to be executed by the motors.
+ *
+ */
 class AttitudeController {
  public:
+  /**
+   * @brief Construct a new Attitude Controller object.
+   *
+   * @param config The configuration parameters for the AttitudeController
+   */
   explicit AttitudeController(const AttitudeControllerConfig& config);
 
+  /**
+   * @brief Construct a new Attitude Controller object with a YAML::Node
+   *
+   * @param controller_params The configuration parameters for the AttitudeController in YAML::Node format
+   */
   explicit AttitudeController(const YAML::Node& controller_params);
 
+  /**
+   * @brief Calculate the control loop for one time step. The input is the current measured state of the system, and the
+   * desired state of the system, the output is the control commands. Depending on the flight mode of the system, the
+   * 'setpoints` can mean different things. In stabilized flight mode, the `setpoints` for roll and pitch are the
+   * desired angle in radians. In acro mode, the `setpoints` for roll and pitch are the desired angular velocity in
+   * radians/s. Yaw is always controlled as angular velocity (radians/s)
+   *
+   * @param setpoints The desired system state
+   * @param imu_data_body The measured system state
+   * @param flight_mode The current flight mode of the system
+   * @return std::vector<float> The calculated control input
+   */
   std::vector<float> calculate_control_loop(const std::vector<float>& setpoints, const StateData& imu_data_body,
                                             FlightMode flight_mode);
 
+  /**
+   * @brief Zeros the signals for all internal PID filters
+   *
+   */
   void zero_pids();
 
  private:

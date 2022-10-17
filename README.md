@@ -29,6 +29,17 @@ with a Remote Controller commanding the roll/pitch/yaw values.
 is also supported, and with externally provided navigation data,
 [Position Mode](https://docs.px4.io/main/en/getting_started/flight_modes.html#position-mode-mc) is supported.
 
+### Related Projects
+
+The most common open source flight stack is arguable the [PX4 Auto Pilot](https://px4.io/). It is fully featured,
+supports many sensors and hardware platforms. At the time of this writing, beaglebone support is still experimental.
+
+Another common platform is [Ardupilot](https://ardupilot.org/) which supports many vehicle types, including:
+fixed wing aircraft, helicopters, drones, boats, submarines, and more.
+
+flyMS is a platform much smaller in scope, allowing users with a Beaglebone & quadrotor hardware an alternative way to
+install and develop autonomy systems at a reduced learning curve.
+
 ## Required Hardware
 
 1. [Beaglebone Blue](https://beagleboard.org/blue), or Beaglebone Black equipped with the
@@ -46,9 +57,9 @@ is also supported, and with externally provided navigation data,
 
 ## flyMS Webserver
 
-flyMS comes with a webserver that is used for interfacing with the flight controller. It can update configurations
-(PID constants, flight behavior, etc.), run calibration routines, and inform you of errors. It
-can be accessed at http://beaglebone.local:5001/ from any device on a shared network.
+flyMS includes a webserver that is used for interfacing with the flight configuration and system state. It can update
+PID constants, run calibration routines, and inform you of errors. It can be accessed at http://beaglebone.local:5001/
+from any device on a shared network.
 
 > **_NOTE:_** If flight testing away from a local WiFi connection, you can use a smartphone to connect to the WiFi
 network broadcasted by the beaglebone itself to access this webserver. The network name is `BeagleBone-XXXX` with a
