@@ -31,7 +31,7 @@ is also supported, and with externally provided navigation data,
 
 ### Related Projects
 
-The most common open source flight stack is arguable the [PX4 Auto Pilot](https://px4.io/). It is fully featured,
+The most common open source flight stack is arguably the [PX4 Auto Pilot](https://px4.io/). It is fully featured,
 supports many sensors and hardware platforms. At the time of this writing, beaglebone support is still experimental.
 
 Another common platform is [Ardupilot](https://ardupilot.org/) which supports many vehicle types, including:
