@@ -1,7 +1,7 @@
 
 FROM debian:buster-slim as x86_builder
 
-RUN apt-get update && apt-get install -y git cmake g++ libgtest-dev sudo doxygen python3-pip graphviz clang-format-11
+RUN apt-get update && apt-get install -y git cmake g++ libgtest-dev sudo doxygen python3-pip graphviz clang-format-11 lcov
 RUN ln -s /usr/bin/clang-format-11 /usr/bin/clang-format
 
 RUN pip3 install --upgrade pip && pip3 install sphinx_rtd_theme breathe myst_parser pre-commit
@@ -16,8 +16,6 @@ RUN cd /opt && \
   cmake .. && \
   make && \
   make install
-
-
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 
