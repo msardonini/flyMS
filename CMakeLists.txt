@@ -6,9 +6,11 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Set options
-option(FLYMS_BUILD_TESTS "Build tests" ON)
 option(CROSS_COMPILE "Cross compile" ON)
-option(CODE_COVERAGE "Build with code coverage" ON)
+option(FLYMS_BUILD_TESTS "Build tests" OFF)
+option(BUILD_TESTING "Build tests" OFF)
+option(BUILD_TESTS "Build tests" OFF)
+option(CODE_COVERAGE "Build unit tests with code coverage" OFF)
 
 # # Get the architecture of the CPU building this
 EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)

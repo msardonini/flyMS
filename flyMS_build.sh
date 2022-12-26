@@ -15,6 +15,8 @@ function print_usage {
   echo "      -b                      Builds Docker Image for Build Environment. "
   echo "                              This needs to be run once before flyMS can be built"
   echo "      -h, --help              Prints this help menu and exits"
+  echo "      --dev                   Enter development mode. This will start a docker container with the x86 build system and "
+  echo "                              give you an interactive shell"
   echo "      --test                  Builds and runs the unit tests. This option will build for x84_64"
   echo "                              architecture and save the outputs in a local 'build_x86' directory"
   echo "      --address {address}     Specify the IP address of the beaglebone to send outputs to."
@@ -36,7 +38,7 @@ function build_docker_image {
 }
 
 function dev_flyMS {
-  docker run --network redis --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
+  docker run --network host --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
 }
 
 function build_flyMS {
@@ -49,7 +51,7 @@ function build_flyMS {
   fi
   SOURCE_DIR=/opt/flyMS
 
-  docker run -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
+  docker run --network host -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"

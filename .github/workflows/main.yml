@@ -14,5 +14,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: 'recursive'
+      - run: apt install -y redis
       - run: ./flyMS_build.sh -b --test
       - run: ./flyMS_build.sh -b

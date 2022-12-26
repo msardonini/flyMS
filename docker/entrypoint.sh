@@ -50,10 +50,14 @@ while true; do
 done
 
 if [ $BUILD_AND_RUN_TESTS -eq 1 ]; then
-  cmake -S $SOURCE_DIR -B $SOURCE_DIR/build_x86 -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -D BUILD_TESTS=ON \
-    -D CROSS_COMPILE=OFF
-  make -j$('nproc') -C $SOURCE_DIR/build_x86
-  $SOURCE_DIR/build_x86/bin/flyMS_tests
+  cmake -S $SOURCE_DIR -B $SOURCE_DIR/build_x86 -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -D FLYMS_BUILD_TESTS=ON \
+    -D CODE_COVERAGE=OFF
+  make -j$('nproc') -C $SOURCE_DIR/build_x86 test
+
+  # Generate code coverage reports
+  cmake -S $SOURCE_DIR -B $SOURCE_DIR/build_x86 -D CODE_COVERAGE=ON
+  make -C $SOURCE_DIR/build_x86 ccov-all
+
 else
   cmake -S $SOURCE_DIR -B $SOURCE_DIR/build -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
   make -j$('nproc') -C $SOURCE_DIR/build
