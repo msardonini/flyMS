@@ -61,7 +61,7 @@ function build_flyMS {
   [ ! -z $REDIS_HOST ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_HOST=$REDIS_HOST"
   [ ! -z $REDIS_PORT ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_PORT=$REDIS_PORT"
 
-  docker run $FLYMS_ENV_VARS -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
+  docker run --network host $FLYMS_ENV_VARS -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
