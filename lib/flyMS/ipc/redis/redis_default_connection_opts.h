@@ -1,6 +1,7 @@
 #pragma once
 
 #include "redis++.h"
+#include "spdlog/spdlog.h"
 
 namespace flyMS {
 
@@ -31,6 +32,8 @@ inline sw::redis::ConnectionOptions redis_default_connection_opts() {
   } else {
     opts.port = kRedisPortDefault;
   }
+
+  spdlog::info("Connecting to redis at {}:{}", opts.host, opts.port);
 
   opts.socket_timeout = kRedisTimeout;
   return opts;
