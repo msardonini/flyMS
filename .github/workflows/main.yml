@@ -28,10 +28,9 @@ jobs:
         with:
           submodules: 'recursive'
       - run: ./flyMS_build.sh -b --test
-      - run: ./flyMS_build.sh -b
-
         env:
           # The hostname used to communicate with the Redis service container
           REDIS_HOST: redis
           # The default Redis port
           REDIS_PORT: 6379
+      - run: ./flyMS_build.sh -b
