@@ -5,6 +5,11 @@ on: [push]
 jobs:
   flyMS_build_and_tests:
     runs-on: ubuntu-latest
+    env:
+      # The hostname used to communicate with the Redis service container
+      REDIS_HOST: redis
+      # The default Redis port
+      REDIS_PORT: 6379
     name: flyMS build and tests
 
     # Service containers to run with `container-job`
@@ -24,11 +29,6 @@ jobs:
           - 6379:6379
 
     steps:
-      env:
-        # The hostname used to communicate with the Redis service container
-        REDIS_HOST: redis
-        # The default Redis port
-        REDIS_PORT: 6379
       # To use this repository's private action,
       # you must check out the repository
       - name: Checkout
