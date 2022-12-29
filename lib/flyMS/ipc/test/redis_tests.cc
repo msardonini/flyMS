@@ -12,8 +12,8 @@ class RedisTestFixture : public ::testing::Test {
  public:
   RedisTestFixture() = default;
 
-  std::unique_ptr<flyMS::RedisSubscriber> sub;
-  std::unique_ptr<flyMS::RedisPublisher> pub;
+  // std::unique_ptr<flyMS::RedisSubscriber> sub;
+  // std::unique_ptr<flyMS::RedisPublisher> pub;
 
   std::function<void(const sw::redis::Error&)> timeout_callback = [](const auto err) {};
 
@@ -34,11 +34,17 @@ TEST_F(RedisTestFixture, SendAndReceive) {
     this->cond_var.notify_one();
   };
 
-  sub = std::make_unique<flyMS::RedisSubscriber>(callback, std::vector<std::string>{test_channel}, timeout_callback);
-  pub = std::make_unique<flyMS::RedisPublisher>();
+  auto sub =
+      std::make_unique<flyMS::RedisSubscriber>(callback, std::vector<std::string>{test_channel}, timeout_callback);
+  auto pub = std::make_shared<flyMS::RedisPublisher>();
 
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  auto pub_msg = [](auto pub, auto chan, auto msg) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    pub->publish(chan, msg);
+  };
+
   pub->publish(test_channel, test_message);
+  std::thread pub_thread(pub_msg, pub, test_channel, test_message);
 
   std::unique_lock<std::mutex> lock(cv_mutex);
   if (cond_var.wait_for(lock, kREDIS_TIMEOUT) == std::cv_status::timeout) {
@@ -46,6 +52,7 @@ TEST_F(RedisTestFixture, SendAndReceive) {
   }
 
   EXPECT_EQ(output_str, test_message);
+  pub_thread.join();
 }
 
 TEST_F(RedisTestFixture, SendAndReceiveMany) {
@@ -65,9 +72,9 @@ TEST_F(RedisTestFixture, SendAndReceiveMany) {
     }
   };
 
-  sub = std::make_unique<flyMS::RedisSubscriber>(callback, std::vector<std::string>{test_channel, test_channel2},
-                                                 timeout_callback);
-  pub = std::make_unique<flyMS::RedisPublisher>();
+  auto sub = std::make_unique<flyMS::RedisSubscriber>(callback, std::vector<std::string>{test_channel, test_channel2},
+                                                      timeout_callback);
+  auto pub = std::make_unique<flyMS::RedisPublisher>();
 
   // Simple lambda to geneate a unique string given an input number
   auto generate_msg = [input_str](int msg_number) { return input_str + std::string(" ") + std::to_string(msg_number); };
@@ -98,7 +105,7 @@ TEST_F(RedisTestFixture, SendAndReceiveQueue) {
   auto queue = redis_sub_queue.register_message(test_channel);
   redis_sub_queue.start();
 
-  pub = std::make_unique<flyMS::RedisPublisher>();
+  auto pub = std::make_unique<flyMS::RedisPublisher>();
   pub->publish(test_channel, test_message);
 
   auto start = std::chrono::steady_clock::now();

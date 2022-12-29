@@ -12,18 +12,18 @@ jobs:
     #   REDIS_PORT: 6379
     name: flyMS build and tests
 
-    # Service containers to run with `container-job`
-    services:
-      # Label used to access the service container
-      redis:
-        # Docker Hub image
-        image: redis
-        # Set health checks to wait until redis has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # # Service containers to run with `container-job`
+    # services:
+    #   # Label used to access the service container
+    #   redis:
+    #     # Docker Hub image
+    #     image: redis
+    #     # Set health checks to wait until redis has started
+    #     options: >-
+    #       --health-cmd "redis-cli ping"
+    #       --health-interval 10s
+    #       --health-timeout 5s
+    #       --health-retries 5
 
     steps:
       # To use this repository's private action,
@@ -32,6 +32,5 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - run: sudo apt-get install -y redis-tools redis-server
       - run: ./flyMS_build.sh -b --test
       - run: ./flyMS_build.sh -b
