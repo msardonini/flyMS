@@ -38,7 +38,13 @@ function build_docker_image {
 }
 
 function dev_flyMS {
-  docker run --network host --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
+
+  FLYMS_ENV_VARS=""
+  [ ! -z $REDIS_HOST ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_HOST=$REDIS_HOST"
+  [ ! -z $REDIS_PORT ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_PORT=$REDIS_PORT"
+
+
+  docker run --network host $FLYMS_ENV_VARS --name flyMS_dev --rm -it -v `pwd`:/opt/flyMS -w /opt/flyMS --entrypoint bash flyms_builder_x86:buster
 }
 
 function build_flyMS {
@@ -51,7 +57,11 @@ function build_flyMS {
   fi
   SOURCE_DIR=/opt/flyMS
 
-  docker run --network host -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
+  FLYMS_ENV_VARS=""
+  [ ! -z $REDIS_HOST ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_HOST=$REDIS_HOST"
+  [ ! -z $REDIS_PORT ] && FLYMS_ENV_VARS="$FLYMS_ENV_VARS -e REDIS_PORT=$REDIS_PORT"
+
+  docker run --network host $FLYMS_ENV_VARS -v `pwd`:$SOURCE_DIR $BASE_DOCKER_IMAGE --source-dir $SOURCE_DIR $DEBUG_COMMAND $TEST_COMMAND
 
   if [ $? -ne 0 ]; then
     echo "flyMS build failed! Exiting"
