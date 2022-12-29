@@ -13,7 +13,7 @@ nohup=csvread([filepath filename],1,0);
 % nohup(1,:) = []; % discard first log
 
 time=nohup(:,1);
-6
+
 roll=nohup(:,2);
 pitch=nohup(:,3);
 yaw=nohup(:,4);

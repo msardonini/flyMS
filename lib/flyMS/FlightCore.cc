@@ -108,7 +108,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   auto setpoints = setpoint_module_.calculate_setpoint_data(remote_data);
 
   // If landed for 2 seconds, reset integrators and Yaw error
-  if (remote_data[kRC_THROTTLE_INDEX] < setpoint_module_.get_min_throttle() + .01) {
+  if (remote_data[kRC_THROTTLE_INDEX] < .01) {
     integrator_reset_++;
   } else {
     integrator_reset_ = 0;
