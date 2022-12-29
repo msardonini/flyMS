@@ -24,6 +24,11 @@ jobs:
           - 6379:6379
 
     steps:
+        env:
+          # The hostname used to communicate with the Redis service container
+          REDIS_HOST: redis
+          # The default Redis port
+          REDIS_PORT: 6379
       # To use this repository's private action,
       # you must check out the repository
       - name: Checkout
@@ -31,9 +36,4 @@ jobs:
         with:
           submodules: 'recursive'
       - run: ./flyMS_build.sh -b --test
-        env:
-          # The hostname used to communicate with the Redis service container
-          REDIS_HOST: redis
-          # The default Redis port
-          REDIS_PORT: 6379
       - run: ./flyMS_build.sh -b
