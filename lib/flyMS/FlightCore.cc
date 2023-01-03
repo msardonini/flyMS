@@ -114,6 +114,8 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     integrator_reset_ = 0;
   }
   if (integrator_reset_ > 2 / kFLYMS_CONTROL_LOOP_DT) {
+    spdlog::info("Land detected, resetting integrators at time {}", imu_data_body.timestamp_us);
+
     setpoints[kRC_YAW_INDEX] = imu_data_body.euler[2];
     setpoint_module_.set_yaw_ref(imu_data_body.euler[2]);
     attitude_controller_.zero_pids();

@@ -48,19 +48,18 @@ Setpoint::~Setpoint() {}
 
 std::vector<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
   std::vector<float> setpoint_outputs(4);
+
   // Set the throttle
-  setpoint_outputs[0] =
-      (remote_control_data[kRC_THROTTLE_INDEX] + 1.0) / 2.0 * (throttle_limits_[1] - throttle_limits_[0]) +
-      throttle_limits_[0];
+  remote_control_data[kRC_THROTTLE_INDEX] * (throttle_limits_[1] - throttle_limits_[0]) + throttle_limits_[0];
 
   // Set roll/pitch reference value
   // DSM2 Receiver is inherently positive to the left
   if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
-    setpoint_outputs[1] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_stabilized_[0];
-    setpoint_outputs[2] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_stabilized_[1];
+    setpoint_outputs[kRC_ROLL_INDEX] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_stabilized_[0];
+    setpoint_outputs[kRC_PITCH_INDEX] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_stabilized_[1];
   } else if (flight_mode_ == FlightMode::ACRO) {
-    setpoint_outputs[1] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_acro_[0];
-    setpoint_outputs[2] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_acro_[1];
+    setpoint_outputs[kRC_ROLL_INDEX] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_acro_[0];
+    setpoint_outputs[kRC_PITCH_INDEX] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_acro_[1];
   } else {
     throw std::runtime_error("Error! Invalid flight mode");
   }
