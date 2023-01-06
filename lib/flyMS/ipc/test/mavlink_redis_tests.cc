@@ -8,15 +8,19 @@ class MavlinkRedisTestFixture : public ::testing::Test {
   MavlinkRedisTestFixture() = default;
 
   static constexpr int num_msgs = 10;
-  static constexpr char test_channel[] = "test_redis_mavlink";
+  static constexpr char test_channel_prefix[] = "test_redis_mavlink";
 };
 
 TEST_F(MavlinkRedisTestFixture, Ctor) {
+  auto test_channel =
+      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   flyMS::MavlinkRedisSub sub(test_channel);
   flyMS::MavlinkRedisPub pub;
 }
 
 TEST_F(MavlinkRedisTestFixture, SendAndReceive) {
+  auto test_channel =
+      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   flyMS::MavlinkRedisSub sub(test_channel);
   flyMS::MavlinkRedisPub pub;
 
@@ -51,6 +55,8 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceive) {
 }
 
 TEST_F(MavlinkRedisTestFixture, SendAndReceiveWithQueue) {
+  auto test_channel =
+      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   flyMS::MavlinkRedisPub pub;
 
   mavlink_odometry_t odom_msg_send;
@@ -83,6 +89,8 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceiveWithQueue) {
 }
 
 TEST_F(MavlinkRedisTestFixture, SendAndReceiveManyWithQueue) {
+  auto test_channel =
+      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   flyMS::MavlinkRedisPub pub;
 
   mavlink_odometry_t odom_msg_send;
