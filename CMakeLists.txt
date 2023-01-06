@@ -50,14 +50,13 @@ if (FLYMS_BUILD_TESTS)
   enable_testing()
   include(cmake/unit_test_helpers.cmake)
 
-  if (CODE_COVERAGE)
-    message(STATUS "Overriding build type for code coverage")
-    set(CMAKE_BUILD_TYPE DEBUG)
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ftest-coverage -fprofile-arcs")
-    include(cmake/code_coverage.cmake)
+  message(STATUS "Overriding build type for code coverage")
+  set(CMAKE_BUILD_TYPE DEBUG)
+  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ftest-coverage -fprofile-arcs")
 
-    add_code_coverage_all_targets(EXCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/external* *test* /usr*)
-  endif()
+  # These commands will have no effect if the CODE_COVERAGE variable is not set to ON
+  include(cmake/code_coverage.cmake)
+  add_code_coverage_all_targets(EXCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/external* *test* /usr*)
 endif()
 
 add_subdirectory(external)
