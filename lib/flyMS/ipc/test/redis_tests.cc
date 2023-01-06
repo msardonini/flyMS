@@ -35,6 +35,8 @@ TEST_F(RedisTestFixture, SendAndReceiveQueue) {
   redis_sub_queue.start();
 
   auto pub = std::make_unique<flyMS::RedisPublisher>();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   pub->publish(test_channel, test_message);
 
   auto start = std::chrono::steady_clock::now();
@@ -62,7 +64,7 @@ TEST_F(RedisTestFixture, SendAndReceive) {
   auto pub = std::make_shared<flyMS::RedisPublisher>();
 
   auto pub_msg = [](auto pub, auto chan, auto msg) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     pub->publish(chan, msg);
   };
 
@@ -106,6 +108,7 @@ TEST_F(RedisTestFixture, SendAndReceiveMany) {
 
   for (auto msg_num = 0; msg_num < num_msgs; msg_num++) {
     auto& channel = (msg_num % 2 == 0) ? test_channel : test_channel2;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     pub->publish(channel, generate_msg(msg_num));
   }
 
