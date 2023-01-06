@@ -27,6 +27,27 @@ class RedisTestFixture : public ::testing::Test {
   static constexpr char test_message[] = "Hello Redis!";
 };
 
+TEST_F(RedisTestFixture, SendAndReceiveQueue) {
+  auto test_channel =
+      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+  flyMS::RedisSubscriberQueue redis_sub_queue;
+  auto queue = redis_sub_queue.register_message(test_channel);
+  redis_sub_queue.start();
+
+  auto pub = std::make_unique<flyMS::RedisPublisher>();
+  pub->publish(test_channel, test_message);
+
+  auto start = std::chrono::steady_clock::now();
+  while (queue->empty()) {
+    if (std::chrono::steady_clock::now() > start + kREDIS_TIMEOUT) {
+      FAIL() << " Timeout waiting for message to arrive!";
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  EXPECT_EQ(queue->front(), test_message);
+}
+
 TEST_F(RedisTestFixture, SendAndReceive) {
   auto test_channel =
       std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
@@ -102,25 +123,4 @@ TEST_F(RedisTestFixture, SendAndReceiveMany) {
     EXPECT_EQ(output_strings_chan0[msg_num], generate_msg(msg_num * 2));
     EXPECT_EQ(output_strings_chan1.at(msg_num), generate_msg(msg_num * 2 + 1));
   }
-}
-
-TEST_F(RedisTestFixture, SendAndReceiveQueue) {
-  auto test_channel =
-      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  flyMS::RedisSubscriberQueue redis_sub_queue;
-  auto queue = redis_sub_queue.register_message(test_channel);
-  redis_sub_queue.start();
-
-  auto pub = std::make_unique<flyMS::RedisPublisher>();
-  pub->publish(test_channel, test_message);
-
-  auto start = std::chrono::steady_clock::now();
-  while (queue->empty()) {
-    if (std::chrono::steady_clock::now() > start + kREDIS_TIMEOUT) {
-      FAIL() << " Timeout waiting for message to arrive!";
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
-
-  EXPECT_EQ(queue->front(), test_message);
 }
