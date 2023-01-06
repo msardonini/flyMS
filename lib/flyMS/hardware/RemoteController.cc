@@ -9,6 +9,7 @@
 
 namespace flyMS {
 
+static constexpr float kERROR_TOLERANCE = 0.1;
 static constexpr uint32_t kCONNECTION_MONITOR_LOOP_FRQ = 10;
 static constexpr auto kCONNECTION_MONITOR_LOOP_SLEEP_TIME =
     std::chrono::microseconds(1000000 / kCONNECTION_MONITOR_LOOP_FRQ);
@@ -54,6 +55,13 @@ void RemoteController::data_callback() {
   std::vector<float> channel_data(RC_MAX_DSM_CHANNELS);
   for (auto i = 0; i < RC_MAX_DSM_CHANNELS; i++) {
     channel_data[i] = rc_dsm_ch_normalized(i + 1);
+    if (channel_data[i] < (-1.f - kERROR_TOLERANCE) || channel_data[i] > (1.f + kERROR_TOLERANCE)) {
+      spdlog::error(
+          "Channel {} has value {} which is outside of the expected range [-1, 1]. Please run rc_calibrate_dsm. "
+          "Shutting down program",
+          i, channel_data[i]);
+      rc_set_state(EXITING);
+    }
   }
   auto& this_instance = RemoteController::get_instance();
   this_instance.set_channel_values(std::move(channel_data));

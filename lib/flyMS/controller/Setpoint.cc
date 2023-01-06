@@ -49,8 +49,10 @@ Setpoint::~Setpoint() {}
 std::vector<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
   std::vector<float> setpoint_outputs(4);
 
-  // Set the throttle
-  remote_control_data[kRC_THROTTLE_INDEX] * (throttle_limits_[1] - throttle_limits_[0]) + throttle_limits_[0];
+  // Set the throttle, scale to 0-1 range then apply min/max throttle limits
+  setpoint_outputs[kRC_THROTTLE_INDEX] =
+      ((remote_control_data[kRC_THROTTLE_INDEX] + 1) / 2) * (throttle_limits_[1] - throttle_limits_[0]) +
+      throttle_limits_[0];
 
   // Set roll/pitch reference value
   // DSM2 Receiver is inherently positive to the left
