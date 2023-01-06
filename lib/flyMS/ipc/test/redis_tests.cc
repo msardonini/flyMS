@@ -7,7 +7,7 @@
 #include "flyMS/ipc/redis/RedisSubscriberQueue.h"
 #include "gtest/gtest.h"
 
-static constexpr auto kREDIS_TIMEOUT = std::chrono::seconds(10);
+static constexpr auto kREDIS_TIMEOUT = std::chrono::seconds(30);
 class RedisTestFixture : public ::testing::Test {
  public:
   RedisTestFixture() = default;
