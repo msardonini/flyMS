@@ -149,7 +149,6 @@ class RedisSubscriberQueue {
    * @param msg The message content
    */
   void callback(std::string channel, std::string msg) {
-    spdlog::info("redis subscriber callback: {} {}", channel, msg);
     if (redis_queues_.find(channel) != redis_queues_.end()) {
       redis_queues_.find(channel)->second->push(msg);
     } else {

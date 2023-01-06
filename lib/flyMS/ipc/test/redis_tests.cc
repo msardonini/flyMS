@@ -23,13 +23,11 @@ class RedisTestFixture : public ::testing::Test {
 
   static constexpr int num_msgs = 10;
 
-  static constexpr char test_channel_prefix[] = "test_redis";
+  static constexpr char test_channel[] = "test_redis";
   static constexpr char test_message[] = "Hello Redis!";
 };
 
 TEST_F(RedisTestFixture, SendAndReceiveQueue) {
-  auto test_channel =
-      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   flyMS::RedisSubscriberQueue redis_sub_queue;
   auto queue = redis_sub_queue.register_message(test_channel);
   redis_sub_queue.start();
@@ -51,8 +49,6 @@ TEST_F(RedisTestFixture, SendAndReceiveQueue) {
 }
 
 TEST_F(RedisTestFixture, SendAndReceive) {
-  auto test_channel =
-      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   std::string output_str;
   auto callback = [this, &output_str](std::string chan, std::string msg) {
     output_str = msg;
@@ -81,8 +77,6 @@ TEST_F(RedisTestFixture, SendAndReceive) {
 }
 
 TEST_F(RedisTestFixture, SendAndReceiveMany) {
-  auto test_channel =
-      std::string(test_channel_prefix) + ::testing::UnitTest::GetInstance()->current_test_info()->name();
   const std::string input_str(test_message);
   const std::string test_channel2 = "test_channel2";
 
