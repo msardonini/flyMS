@@ -8,12 +8,12 @@
 #include "gtest/gtest.h"
 
 static constexpr auto kREDIS_TIMEOUT = std::chrono::seconds(10);
+static constexpr auto kPUBLISH_DELAY = std::chrono::milliseconds(10);
+static constexpr auto kWAIT_DT = std::chrono::microseconds(1);
+
 class RedisTestFixture : public ::testing::Test {
  public:
   RedisTestFixture() = default;
-
-  // std::unique_ptr<flyMS::RedisSubscriber> sub;
-  // std::unique_ptr<flyMS::RedisPublisher> pub;
 
   std::function<void(const sw::redis::Error&)> timeout_callback = [](const auto err) {};
 
@@ -34,7 +34,7 @@ TEST_F(RedisTestFixture, SendAndReceiveQueue) {
 
   auto pub = std::make_unique<flyMS::RedisPublisher>();
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(kPUBLISH_DELAY);
   pub->publish(test_channel, test_message);
 
   auto start = std::chrono::steady_clock::now();
@@ -42,7 +42,7 @@ TEST_F(RedisTestFixture, SendAndReceiveQueue) {
     if (std::chrono::steady_clock::now() > start + kREDIS_TIMEOUT) {
       FAIL() << " Timeout waiting for message to arrive!";
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(kWAIT_DT);
   }
 
   EXPECT_EQ(queue->front(), test_message);
@@ -60,7 +60,7 @@ TEST_F(RedisTestFixture, SendAndReceive) {
   auto pub = std::make_shared<flyMS::RedisPublisher>();
 
   auto pub_msg = [](auto pub, auto chan, auto msg) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(kPUBLISH_DELAY);
     pub->publish(chan, msg);
   };
 
@@ -102,7 +102,7 @@ TEST_F(RedisTestFixture, SendAndReceiveMany) {
 
   for (auto msg_num = 0; msg_num < num_msgs; msg_num++) {
     auto& channel = (msg_num % 2 == 0) ? test_channel : test_channel2;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(kPUBLISH_DELAY);
     pub->publish(channel, generate_msg(msg_num));
   }
 
@@ -112,7 +112,7 @@ TEST_F(RedisTestFixture, SendAndReceiveMany) {
     if (std::chrono::steady_clock::now() > start + kREDIS_TIMEOUT) {
       FAIL() << " Timeout waiting for all messages to arrive!";
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(kWAIT_DT);
   }
 
   EXPECT_EQ(output_strings_chan0.size(), num_msgs / 2);
