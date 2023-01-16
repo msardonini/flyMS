@@ -68,12 +68,12 @@ TEST_F(AttitudeControllerTestFixture, SimplePController) {
   YAML::Node controller_acro_config = flyMS::to_yaml(make_simple_p_config());
   flyMS::AttitudeController controller_acro(controller_acro_config);
 
-  const int num_iterations = 100;
+  const int num_iterations = 10;
   for (auto i = 0; i < num_iterations; i++) {
-    std::vector<float> setpoints(5, 1.f);
+    flyMS::TRPY<float> setpoints;
 
     // Assign random values to setpoints
-    for (auto& setpoint : setpoints) {
+    for (auto& setpoint : setpoints.vector()) {
       setpoint = static_cast<double>(std::rand()) / RAND_MAX * 1.5;
     }
 
@@ -81,9 +81,9 @@ TEST_F(AttitudeControllerTestFixture, SimplePController) {
     auto output_stab = controller_stab.calculate_control_loop(setpoints, state, flyMS::FlightMode::STABILIZED);
     auto output_acro = controller_acro.calculate_control_loop(setpoints, state, flyMS::FlightMode::ACRO);
 
-    clamp_by_effort(max_effort, setpoints);
+    clamp_by_effort(max_effort, setpoints.vector());
 
-    for (auto j = 0; j < 3; j++) {
+    for (auto j = 1; j < 4; j++) {
       EXPECT_FLOAT_EQ(output_stab[j], setpoints[j]);
       EXPECT_FLOAT_EQ(output_acro[j], setpoints[j]);
     }

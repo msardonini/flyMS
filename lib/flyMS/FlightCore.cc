@@ -116,7 +116,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   if (integrator_reset_ > 2 / kFLYMS_CONTROL_LOOP_DT) {
     spdlog::info("Land detected, resetting integrators at time {}", imu_data_body.timestamp_us);
 
-    setpoints[kFLYMS_YAW_INDEX] = imu_data_body.euler[2];
+    setpoints.yaw() = imu_data_body.euler[2];
     setpoint_module_.set_yaw_ref(imu_data_body.euler[2]);
     attitude_controller_.zero_pids();
   }
@@ -134,10 +134,10 @@ void FlightCore::flight_core(StateData &imu_data_body) {
    ************************************************************************/
   // The amount of power (0 - 1) to give to each motor
   std::vector<float> u(4);
-  u[0] = att_ctrl[kFLYMS_THROTTLE_INDEX] + att_ctrl[kFLYMS_ROLL_INDEX] - att_ctrl[kFLYMS_PITCH_INDEX] - att_ctrl[kFLYMS_YAW_INDEX];
-  u[1] = att_ctrl[kFLYMS_THROTTLE_INDEX] - att_ctrl[kFLYMS_ROLL_INDEX] - att_ctrl[kFLYMS_PITCH_INDEX] + att_ctrl[kFLYMS_YAW_INDEX];
-  u[2] = att_ctrl[kFLYMS_THROTTLE_INDEX] + att_ctrl[kFLYMS_ROLL_INDEX] + att_ctrl[kFLYMS_PITCH_INDEX] + att_ctrl[kFLYMS_YAW_INDEX];
-  u[3] = att_ctrl[kFLYMS_THROTTLE_INDEX] - att_ctrl[kFLYMS_ROLL_INDEX] + att_ctrl[kFLYMS_PITCH_INDEX] - att_ctrl[kFLYMS_YAW_INDEX];
+  u[0] = att_ctrl.throttle() + att_ctrl.roll() - att_ctrl.pitch() - att_ctrl.yaw();
+  u[1] = att_ctrl.throttle() - att_ctrl.roll() - att_ctrl.pitch() + att_ctrl.yaw();
+  u[2] = att_ctrl.throttle() + att_ctrl.roll() + att_ctrl.pitch() + att_ctrl.yaw();
+  u[3] = att_ctrl.throttle() - att_ctrl.roll() + att_ctrl.pitch() - att_ctrl.yaw();
 
   // Check Output Ranges, if outside, adjust
   output_saturation_filter(u);
@@ -157,12 +157,12 @@ void FlightCore::flight_core(StateData &imu_data_body) {
 
   // Print some stuff to the console in debug mode
   if constexpr (kDEBUG_MODE) {
-    console_print(imu_data_body, setpoints, u);
+    console_print(imu_data_body, setpoints.vector(), u);
   }
 
   // Log Important Flight Data For Analysis
   struct ULogFlightMsg flight_msg {
-    imu_data_body.timestamp_us, imu_data_body, setpoints, u, att_ctrl
+    imu_data_body.timestamp_us, imu_data_body, setpoints.vector(), u, att_ctrl.vector()
   };
   ulog_.write_msg(flight_msg);
 }
@@ -191,8 +191,9 @@ void FlightCore::output_saturation_filter(std::vector<float> &u) {
 
 void FlightCore::console_print(const StateData &imu_data_body, const std::vector<float> &setpoints,
                                const std::vector<float> &u) {
-  spdlog::debug(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ", setpoints[kFLYMS_THROTTLE_INDEX],
-                setpoints[kFLYMS_ROLL_INDEX], setpoints[kFLYMS_PITCH_INDEX], setpoints[kFLYMS_YAW_INDEX]);
+  spdlog::debug(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ",
+                setpoints[kFLYMS_THROTTLE_INDEX], setpoints[kFLYMS_ROLL_INDEX], setpoints[kFLYMS_PITCH_INDEX],
+                setpoints[kFLYMS_YAW_INDEX]);
   spdlog::debug(" Motor 1: {:2.2f}, 2: {:2.2f}, 3: {:2.2f}, 4: {:2.2f}", u[0], u[1], u[2], u[3]);
   spdlog::debug(" Roll {:2.2f}, Pitch {:2.2f}, Yaw {:2.2f}", imu_data_body.euler[0], imu_data_body.euler[1],
                 imu_data_body.euler[2]);

@@ -46,22 +46,22 @@ Setpoint::Setpoint(FlightMode flight_mode, const YAML::Node& config_params)
 
 Setpoint::~Setpoint() {}
 
-std::vector<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
-  std::vector<float> setpoint_outputs(4);
+TRPY<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
+  TRPY<float> setpoint_outputs;
 
   // Set the throttle, scale to 0-1 range then apply min/max throttle limits
-  setpoint_outputs[kFLYMS_THROTTLE_INDEX] =
+  setpoint_outputs.throttle() =
       ((remote_control_data[kFLYMS_THROTTLE_INDEX] + 1) / 2) * (throttle_limits_[1] - throttle_limits_[0]) +
       throttle_limits_[0];
 
   // Set roll/pitch reference value
   // DSM2 Receiver is inherently positive to the left
   if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
-    setpoint_outputs[kFLYMS_ROLL_INDEX] = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_stabilized_[0];
-    setpoint_outputs[kFLYMS_PITCH_INDEX] = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_stabilized_[1];
+    setpoint_outputs.roll() = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_stabilized_[0];
+    setpoint_outputs.pitch() = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_stabilized_[1];
   } else if (flight_mode_ == FlightMode::ACRO) {
-    setpoint_outputs[kFLYMS_ROLL_INDEX] = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_acro_[0];
-    setpoint_outputs[kFLYMS_PITCH_INDEX] = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_acro_[1];
+    setpoint_outputs.roll() = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_acro_[0];
+    setpoint_outputs.pitch() = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_acro_[1];
   } else {
     throw std::runtime_error("Error! Invalid flight mode");
   }
@@ -75,7 +75,7 @@ std::vector<float> Setpoint::calculate_setpoint_data(const std::vector<float>& r
     yaw_rate = 0;
   }
 
-  setpoint_outputs[3] = yaw_integrator_.update_filter(yaw_rate);
+  setpoint_outputs.yaw() = yaw_integrator_.update_filter(yaw_rate);
 
   return setpoint_outputs;
 }

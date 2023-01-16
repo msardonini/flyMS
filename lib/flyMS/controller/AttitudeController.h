@@ -6,6 +6,7 @@
 #include "flyMS/common/constants.h"
 #include "flyMS/common/flight_mode.h"
 #include "flyMS/common/state_data.h"
+#include "flyMS/common/trpy.h"
 #include "flyMS/controller/DigitalFilter.h"
 #include "flyMS/hardware/RemoteController.h"
 #include "flyMS/util/yaml_serialization.h"
@@ -66,10 +67,10 @@ class AttitudeController {
    * @param setpoints The desired system state
    * @param imu_data_body The measured system state
    * @param flight_mode The current flight mode of the system
-   * @return std::vector<float> The calculated control input
+   * @return TRPW<float> The calculated control input
    */
-  std::vector<float> calculate_control_loop(const std::vector<float>& setpoints, const StateData& imu_data_body,
-                                            FlightMode flight_mode);
+  TRPY<float> calculate_control_loop(const TRPY<float>& setpoints, const StateData& imu_data_body,
+                                     FlightMode flight_mode);
 
   /**
    * @brief Zeros the signals for all internal PID filters

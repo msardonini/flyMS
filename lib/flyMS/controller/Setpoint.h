@@ -14,6 +14,7 @@
 #include <thread>
 
 #include "flyMS/common/flight_mode.h"
+#include "flyMS/common/trpy.h"
 #include "flyMS/controller/DigitalFilter.h"
 #include "flyMS/controller/position_controller.h"
 #include "flyMS/util/yaml_serialization.h"
@@ -86,7 +87,7 @@ class Setpoint {
    */
   Setpoint& operator=(Setpoint&&) = default;
 
-  std::vector<float> calculate_setpoint_data(const std::vector<float>& remote_control_data);
+  TRPY<float> calculate_setpoint_data(const std::vector<float>& remote_control_data);
 
   /**
    * @brief Set the Yaw Setpoint value to a user defined offset
