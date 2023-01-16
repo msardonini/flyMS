@@ -15,7 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "flyMS/controller/constants.h"
+#include "flyMS/common/constants.h"
 #include "flyMS/hardware/RemoteController.h"
 #include "flyMS/util/debug_mode.h"
 #include "rc/start_stop.h"
@@ -108,7 +108,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   auto setpoints = setpoint_module_.calculate_setpoint_data(remote_data);
 
   // If landed for 2 seconds, reset integrators and Yaw error
-  if (remote_data[kRC_THROTTLE_INDEX] < .01) {
+  if (remote_data[kFLYMS_THROTTLE_INDEX] < .01) {
     integrator_reset_++;
   } else {
     integrator_reset_ = 0;
@@ -116,7 +116,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   if (integrator_reset_ > 2 / kFLYMS_CONTROL_LOOP_DT) {
     spdlog::info("Land detected, resetting integrators at time {}", imu_data_body.timestamp_us);
 
-    setpoints[kRC_YAW_INDEX] = imu_data_body.euler[2];
+    setpoints[kFLYMS_YAW_INDEX] = imu_data_body.euler[2];
     setpoint_module_.set_yaw_ref(imu_data_body.euler[2]);
     attitude_controller_.zero_pids();
   }
@@ -134,10 +134,10 @@ void FlightCore::flight_core(StateData &imu_data_body) {
    ************************************************************************/
   // The amount of power (0 - 1) to give to each motor
   std::vector<float> u(4);
-  u[0] = att_ctrl[kRC_THROTTLE_INDEX] + att_ctrl[kRC_ROLL_INDEX] - att_ctrl[kRC_PITCH_INDEX] - att_ctrl[kRC_YAW_INDEX];
-  u[1] = att_ctrl[kRC_THROTTLE_INDEX] - att_ctrl[kRC_ROLL_INDEX] - att_ctrl[kRC_PITCH_INDEX] + att_ctrl[kRC_YAW_INDEX];
-  u[2] = att_ctrl[kRC_THROTTLE_INDEX] + att_ctrl[kRC_ROLL_INDEX] + att_ctrl[kRC_PITCH_INDEX] + att_ctrl[kRC_YAW_INDEX];
-  u[3] = att_ctrl[kRC_THROTTLE_INDEX] - att_ctrl[kRC_ROLL_INDEX] + att_ctrl[kRC_PITCH_INDEX] - att_ctrl[kRC_YAW_INDEX];
+  u[0] = att_ctrl[kFLYMS_THROTTLE_INDEX] + att_ctrl[kFLYMS_ROLL_INDEX] - att_ctrl[kFLYMS_PITCH_INDEX] - att_ctrl[kFLYMS_YAW_INDEX];
+  u[1] = att_ctrl[kFLYMS_THROTTLE_INDEX] - att_ctrl[kFLYMS_ROLL_INDEX] - att_ctrl[kFLYMS_PITCH_INDEX] + att_ctrl[kFLYMS_YAW_INDEX];
+  u[2] = att_ctrl[kFLYMS_THROTTLE_INDEX] + att_ctrl[kFLYMS_ROLL_INDEX] + att_ctrl[kFLYMS_PITCH_INDEX] + att_ctrl[kFLYMS_YAW_INDEX];
+  u[3] = att_ctrl[kFLYMS_THROTTLE_INDEX] - att_ctrl[kFLYMS_ROLL_INDEX] + att_ctrl[kFLYMS_PITCH_INDEX] - att_ctrl[kFLYMS_YAW_INDEX];
 
   // Check Output Ranges, if outside, adjust
   output_saturation_filter(u);
@@ -149,7 +149,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
 
   // Check the kill Switch and Shutdown if set
   if constexpr (!kDEBUG_MODE) {
-    if (remote_data[kRC_KILL_SWITCH_INDEX] < 0.5) {
+    if (remote_data[kFLYMS_KILL_SWITCH_INDEX] < 0.5) {
       spdlog::info("\nKill Switch Hit! Shutting Down\n");
       rc_set_state(EXITING);
     }
@@ -191,8 +191,8 @@ void FlightCore::output_saturation_filter(std::vector<float> &u) {
 
 void FlightCore::console_print(const StateData &imu_data_body, const std::vector<float> &setpoints,
                                const std::vector<float> &u) {
-  spdlog::debug(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ", setpoints[kRC_THROTTLE_INDEX],
-                setpoints[kRC_ROLL_INDEX], setpoints[kRC_PITCH_INDEX], setpoints[kRC_YAW_INDEX]);
+  spdlog::debug(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ", setpoints[kFLYMS_THROTTLE_INDEX],
+                setpoints[kFLYMS_ROLL_INDEX], setpoints[kFLYMS_PITCH_INDEX], setpoints[kFLYMS_YAW_INDEX]);
   spdlog::debug(" Motor 1: {:2.2f}, 2: {:2.2f}, 3: {:2.2f}, 4: {:2.2f}", u[0], u[1], u[2], u[3]);
   spdlog::debug(" Roll {:2.2f}, Pitch {:2.2f}, Yaw {:2.2f}", imu_data_body.euler[0], imu_data_body.euler[1],
                 imu_data_body.euler[2]);

@@ -1,5 +1,5 @@
 /**
- * @file DigitalFilter.hpp
+ * @file DigitalFilter.h
  * @author Mike Sardonini (msardonini@gmail.com)
  * @brief DigitalFilter class
  * @version 0.1
@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2022
  *
  */
-#include "flyMS/controller/DigitalFilter.hpp"
+#include "flyMS/controller/DigitalFilter.h"
 
 #include <iostream>
 #include <numeric>
@@ -31,11 +31,11 @@ void DigitalFilter::check_args() {
 
   if (std::abs(denominator_[0] - 1.) > denominator_tol) {
     spdlog::warn(
-        "Digital Filter received non-zero leading term for Denominator Coefficients. The filter will be normalized");
+        "Digital Filter received non-one leading term for Denominator Coefficients. The filter will be normalized");
 
     auto val = denominator_[0];
-    std::for_each(numerator_.begin(), numerator_.end(), [val](auto num) { return num / val; });
-    std::for_each(denominator_.begin(), denominator_.end(), [val](auto den) { return den / val; });
+    std::for_each(numerator_.begin(), numerator_.end(), [=](auto &num) { num /= val; });
+    std::for_each(denominator_.begin(), denominator_.end(), [=](auto &den) { den /= val; });
   }
 }
 

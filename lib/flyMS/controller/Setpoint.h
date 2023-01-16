@@ -13,9 +13,9 @@
 #include <mutex>
 #include <thread>
 
-#include "flyMS/controller/DigitalFilter.hpp"
+#include "flyMS/common/flight_mode.h"
+#include "flyMS/controller/DigitalFilter.h"
 #include "flyMS/controller/position_controller.h"
-#include "flyMS/types/flight_mode.h"
 #include "flyMS/util/yaml_serialization.h"
 #include "yaml-cpp/yaml.h"
 

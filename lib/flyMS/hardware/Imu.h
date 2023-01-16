@@ -13,7 +13,7 @@
 #include <functional>
 
 #include "Eigen/Dense"
-#include "flyMS/types/state_data.h"
+#include "flyMS/common/state_data.h"
 #include "rc/led.h"
 #include "rc/mpu.h"
 #include "yaml-cpp/yaml.h"

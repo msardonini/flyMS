@@ -29,6 +29,21 @@ struct StateData {
 
   // int    num_wraps;        // Number of spins in Yaw
   float initialYaw;
+
+  /// @brief Instantiates an objects and sets all fields to zero
+  static StateData zeros() {
+    auto zeros_vec = Eigen::Vector3f::Zero();
+
+    return StateData{.timestamp_us = 0,
+                     .euler = zeros_vec,
+                     .eulerRate = zeros_vec,
+                     .accel = zeros_vec,
+                     .gyro = zeros_vec,
+                     .mag = zeros_vec,
+                     .barometerAltitude = 0.f,
+                     .compassHeading = 0.f,
+                     .initialYaw = 0.f};
+  }
 };
 
 }  // namespace flyMS

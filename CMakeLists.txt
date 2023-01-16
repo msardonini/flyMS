@@ -8,8 +8,6 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # Set options
 option(CROSS_COMPILE "Cross compile" ON)
 option(FLYMS_BUILD_TESTS "Build tests" OFF)
-option(BUILD_TESTING "Build tests" OFF)
-option(BUILD_TESTS "Build tests" OFF)
 option(CODE_COVERAGE "Build unit tests with code coverage" OFF)
 
 # # Get the architecture of the CPU building this

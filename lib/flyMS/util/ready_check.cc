@@ -16,6 +16,7 @@
 #include <mutex>
 #include <thread>
 
+#include "flyMS/common/constants.h"
 #include "flyMS/hardware/RemoteController.h"
 #include "rc/led.h"
 #include "rc/start_stop.h"
@@ -53,8 +54,8 @@ bool wait_for_start_signal() {
     if (rc_channel_data.empty()) {
       continue;
     }
-    std::call_once(first_run, [&]() { prev_switch_val = rc_channel_data[kRC_KILL_SWITCH_INDEX]; });
-    float switch_val = rc_channel_data[kRC_KILL_SWITCH_INDEX];
+    std::call_once(first_run, [&]() { prev_switch_val = rc_channel_data[kFLYMS_KILL_SWITCH_INDEX]; });
+    float switch_val = rc_channel_data[kFLYMS_KILL_SWITCH_INDEX];
 
     if (std::abs(switch_val - prev_switch_val) > SWITCH_THRESHOLD_VAL) {
       toggle_count++;
@@ -65,7 +66,7 @@ bool wait_for_start_signal() {
 
   // Make sure the kill switch disengaged before starting
   while (rc_get_state() != EXITING &&
-         RemoteController::get_instance().get_channel_data()[kRC_KILL_SWITCH_INDEX] < SWITCH_THRESHOLD_VAL) {
+         RemoteController::get_instance().get_channel_data()[kFLYMS_KILL_SWITCH_INDEX] < SWITCH_THRESHOLD_VAL) {
     std::this_thread::sleep_for(READY_CHECK_SLEEP_TIME);
   }
 

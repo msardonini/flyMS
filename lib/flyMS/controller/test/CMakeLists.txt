@@ -1,7 +1,8 @@
 
 add_executable(flyMS_controller_tests
   DigitalFilter_tests.cc
-  )
+  AttitudeController_tests.cc
+)
 
 target_include_directories(flyMS_controller_tests
   PUBLIC

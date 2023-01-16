@@ -41,8 +41,8 @@
 #include <string>
 #include <thread>
 
-#include "flyMS/types/state_data.h"
-#include "flyMS/types/vio_data.h"
+#include "flyMS/common/state_data.h"
+#include "flyMS/common/vio_data.h"
 #include "flyMS/ulog/ulog_messages.h"
 #include "spdlog/fmt/fmt.h"
 

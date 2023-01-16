@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <array>
 
-#include "flyMS/controller/DigitalFilter.hpp"
-#include "flyMS/controller/constants.h"
+#include "flyMS/common/constants.h"
+#include "flyMS/common/flight_mode.h"
+#include "flyMS/common/state_data.h"
+#include "flyMS/controller/DigitalFilter.h"
 #include "flyMS/hardware/RemoteController.h"
-#include "flyMS/types/flight_mode.h"
-#include "flyMS/types/state_data.h"
 #include "flyMS/util/yaml_serialization.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
