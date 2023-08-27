@@ -76,6 +76,7 @@ function prep_output_folder {
   cp -r build/bin products
   cp -r scripts/* products/bin
   cp -r webserver products/bin
+  git describe > products/version.txt
   [ ! -z $1 ] && cp $1 products/.config/flyMSConfig.yaml
 }
 
