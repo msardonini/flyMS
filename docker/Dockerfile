@@ -11,13 +11,12 @@ RUN pip3 install --upgrade pip && pip3 install sphinx_rtd_theme breathe myst_par
 RUN cd /opt && \
   git clone https://github.com/redis/hiredis.git && \
   cd hiredis && \
+  git checkout v1.1.0 && \
   mkdir build && \
   cd build && \
   cmake .. && \
   make && \
   make install
-
-
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 

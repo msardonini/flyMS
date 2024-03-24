@@ -89,6 +89,7 @@ class PruRequester {
 
     if (response_.success) {
       has_ownership_of_pru_ = true;
+      spdlog::info("Got access to PRU, initializing it now");
       rc_servo_init();
       return true;
     } else {
@@ -134,7 +135,9 @@ class PruRequester {
     }
     int channel = 1;
     for (const auto& cmd : commands) {
-      rc_servo_send_esc_pulse_normalized(channel++, cmd);
+      if (rc_servo_send_esc_pulse_normalized(channel++, cmd)) {
+        spdlog::error("Failed to send command to PRU");
+      }
     }
   }
 

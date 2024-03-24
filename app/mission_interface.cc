@@ -69,6 +69,14 @@ int main() {
   mav_sub.register_message<mavlink_command_long_t, MAVLINK_MSG_ID_COMMAND_LONG>(command_msg_callback,
                                                                                 &mavlink_msg_command_long_decode);
 
+  // Command messages are sent from flyMS to the Mission Computer
+  auto command_msg_callback_int = [&mav_uart](auto& msg) {
+    std::cout << "Received command_int message" << std::endl;
+    mav_uart.send_mavlink_msg<mavlink_command_int_t>(msg, &mavlink_msg_command_int_encode);
+  };
+  mav_sub.register_message<mavlink_command_int_t, MAVLINK_MSG_ID_COMMAND_INT>(command_msg_callback_int,
+                                                                              &mavlink_msg_command_int_decode);
+
   while (is_running_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }

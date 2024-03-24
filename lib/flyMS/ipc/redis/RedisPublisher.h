@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file RedisPublisher.h
  * @author Mike Sardonini

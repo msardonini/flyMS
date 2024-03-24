@@ -51,6 +51,7 @@ bool FlightCore::init() {
     mavlink_subscriber_ = std::make_unique<MavlinkRedisSubQueue>(kFLY_STEREO_CHANNEL);
     odometry_queue_ = mavlink_subscriber_->register_message_with_queue<mavlink_odometry_t, MAVLINK_MSG_ID_ODOMETRY>(
         &mavlink_msg_odometry_decode);
+    mavlink_publisher_ = std::make_unique<MavlinkRedisPub>();
   }
 
   // Blocks execution until a packet is received
@@ -88,6 +89,19 @@ bool FlightCore::init() {
 }
 
 void FlightCore::flight_core(StateData &imu_data_body) {
+  static bool first_run = true;
+  if (first_run) {
+    // Send -0.1 to the ESCs for one second to initialize them
+    std::vector<float> zero_command(4, -0.1);
+    auto time_start = std::chrono::high_resolution_clock::now();
+    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - time_start) <
+           std::chrono::seconds(1)) {
+      pru_requester_.send_command(zero_command);
+      std::this_thread::sleep_for(std::chrono::microseconds(kFLYMS_CONTROL_LOOP_PERIOD_US));
+    }
+    first_run = false;
+  }
+
   // Apply the low pass filters on the gyroscope data
   imu_data_body.eulerRate[0] = gyro_lpf_roll_.update_filter(imu_data_body.eulerRate[0]);
   imu_data_body.eulerRate[1] = gyro_lpf_pitch_.update_filter(imu_data_body.eulerRate[1]);
@@ -108,7 +122,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   auto setpoints = setpoint_module_.calculate_setpoint_data(remote_data);
 
   // If landed for 2 seconds, reset integrators and Yaw error
-  if (remote_data[kRC_THROTTLE_INDEX] < setpoint_module_.get_min_throttle() + .01) {
+  if (remote_data[kRC_THROTTLE_INDEX] < -0.98) {
     integrator_reset_++;
   } else {
     integrator_reset_ = 0;
@@ -153,6 +167,25 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     }
   }
 
+  // Check if the flight mode has changed
+  if (!flyStereo_running_ && remote_data[kRC_FLIGHT_MODE_INDEX] > 0.5) {
+    spdlog::info("Turning on flyStereo!");
+    flyStereo_running_ = true;
+
+    mavlink_command_int_t command_int;
+    command_int.command = MAV_CMD_NAV_GUIDED_ENABLE;
+    mavlink_publisher_->publish<mavlink_command_int_t>(kFLY_STEREO_CHANNEL, command_int,
+                                                       &mavlink_msg_command_int_encode);
+  } else if (flyStereo_running_ && remote_data[kRC_FLIGHT_MODE_INDEX] < 0.5) {
+    spdlog::info("Turning off flyStereo!");
+    flyStereo_running_ = false;
+
+    mavlink_command_int_t command_int;
+    command_int.command = MAV_CMD_NAV_RETURN_TO_LAUNCH;
+    mavlink_publisher_->publish<mavlink_command_int_t>(kFLY_STEREO_CHANNEL, command_int,
+                                                       &mavlink_msg_command_int_encode);
+  }
+
   // Print some stuff to the console in debug mode
   if constexpr (kDEBUG_MODE) {
     console_print(imu_data_body, setpoints, u);
@@ -191,9 +224,9 @@ void FlightCore::console_print(const StateData &imu_data_body, const std::vector
                                const std::vector<float> &u) {
   spdlog::debug(" Throt {:2.2f}, Roll_ref {:2.2f}, Pitch_ref {:2.2f}, Yaw_ref {:2.2f} ", setpoints[kRC_THROTTLE_INDEX],
                 setpoints[kRC_ROLL_INDEX], setpoints[kRC_PITCH_INDEX], setpoints[kRC_YAW_INDEX]);
-  spdlog::debug(" Motor 1: {:2.2f}, 2: {:2.2f}, 3: {:2.2f}, 4: {:2.2f}", u[0], u[1], u[2], u[3]);
-  spdlog::debug(" Roll {:2.2f}, Pitch {:2.2f}, Yaw {:2.2f}", imu_data_body.euler[0], imu_data_body.euler[1],
-                imu_data_body.euler[2]);
+  // spdlog::debug(" Motor 1: {:2.2f}, 2: {:2.2f}, 3: {:2.2f}, 4: {:2.2f}", u[0], u[1], u[2], u[3]);
+  // spdlog::debug(" Roll {:2.2f}, Pitch {:2.2f}, Yaw {:2.2f}", imu_data_body.euler[0], imu_data_body.euler[1],
+  // imu_data_body.euler[2]);
 }
 
 void FlightCore::init_logging(const std::filesystem::path &log_location) {
