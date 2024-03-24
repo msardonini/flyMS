@@ -1,6 +1,6 @@
 [Unit]
 Description=flyMS_webserver
-After=network.target robotcontrol.service PruManager.service
+After=network.target robotcontrol.service
 
 [Service]
 User=debian

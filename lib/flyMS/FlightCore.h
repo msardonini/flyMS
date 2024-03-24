@@ -57,9 +57,10 @@ class FlightCore {
    *
    * @param input_params Input parameters needed for flight
    */
-  FlightCore(const YAML::Node &input_params);
+  FlightCore(const YAML::Node &input_params, std::shared_ptr<PruRequester> pru_requester);
 
-  FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params);
+  FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params,
+             std::shared_ptr<PruRequester> pru_requester);
 
   // TODO: add a non-yaml constructor
   ~FlightCore() = default;
@@ -111,9 +112,10 @@ class FlightCore {
   void output_saturation_filter(std::vector<float> &u);
 
   // Configurable parameters
-  FlightMode flight_mode_;    // TODO remove this from flight core
-  std::string log_filepath_;  //< The filepath to the logging directory
-  YAML::Node config_params_;  //< A copy of the yaml configuration
+  FlightMode flight_mode_;                       // TODO remove this from flight core
+  std::string log_filepath_;                     //< The filepath to the logging directory
+  YAML::Node config_params_;                     //< A copy of the yaml configuration
+  std::shared_ptr<PruRequester> pru_requester_;  //< Object to handle ownership and coms with PRU
 
   // Variables for working with flyStereo
   bool flyStereo_running_ = false;
@@ -131,7 +133,6 @@ class FlightCore {
   Setpoint setpoint_module_;                //< Object and Data struct from the setpoint manager
   AttitudeController attitude_controller_;  //< Converts desired setpoint data & state data to state control signals
   PositionController position_controller_;  //< Controller for position when flying using flyStereo
-  PruRequester pru_requester_;              //< Object to handle ownership of the PRU with the PruHandler
   DigitalFilter gyro_lpf_pitch_;            //< Low pass filter for imu pitch measurement
   DigitalFilter gyro_lpf_roll_;             //< Low pass filter for imu roll measurement
   DigitalFilter gyro_lpf_yaw_;              //< Low pass filter for imu yaw measurement

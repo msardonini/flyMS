@@ -14,6 +14,7 @@
 #include <string>
 
 #include "flyMS/FlightCore.h"
+#include "flyMS/hardware/pru/PruRequester.h"
 #include "flyMS/util/config_requestor.h"
 #include "flyMS/util/debug_mode.h"
 #include "flyMS/util/pid_file.h"
@@ -79,6 +80,9 @@ int main() {
     // Create a PID file for this process
     flyMS::PidFile pid_file(kFLYMS_PID_PATH);
 
+    // Get access to the PRU hardware
+    std::shared_ptr<flyMS::PruRequester> pru_requester = std::make_shared<flyMS::PruRequester>();
+
     if constexpr (flyMS::kDEBUG_MODE) {
       spdlog::info("Debug mode enabled");
       spdlog::set_level(spdlog::level::debug);
@@ -102,7 +106,7 @@ int main() {
     }
 
     rc_set_state(UNINITIALIZED);
-    flyMS::FlightCore fly(config_params);
+    flyMS::FlightCore fly(config_params, pru_requester);
     // Initialize the flight hardware
     if (!fly.init()) {
       rc_set_state(EXITING);

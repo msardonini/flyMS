@@ -21,9 +21,9 @@ PidFile::PidFile(const std::filesystem::path &pid_file_path) : pid_file_path_(pi
       throw std::runtime_error("Cannot start Process with pid file " + pid_file_path.filename().string() +
                                ", another instance is already running.");
     } else {
-      spdlog::warn("Removing stale PID file for PruManager.");
+      spdlog::warn("Removing stale PID file.");
       if (!std::filesystem::remove(pid_file_path)) {
-        throw std::runtime_error("Could not remove stale PID file for PruManager. Do you have permission?");
+        throw std::runtime_error("Could not remove stale PID file. Do you have permission?");
       }
     }
   }
@@ -40,7 +40,7 @@ PidFile::PidFile(const std::filesystem::path &pid_file_path) : pid_file_path_(pi
   pid_file.close();
 
   if (!pid_file) {
-    throw std::runtime_error("Could not create the PID file for PruManager. Do you have permission?");
+    throw std::runtime_error("Could not create the PID file. Do you have permission?");
   }
 }
 

@@ -8,16 +8,6 @@ target_link_libraries(test_webserver
   yaml-cpp
 )
 
-# Build PruManager
-add_executable(PruManager
-  PruManager.cc
-)
-target_link_libraries(PruManager
-  PRIVATE
-    flyMS_lib
-    redis++_static
-)
-
 # Build flyMS
 add_executable(flyMS
   flyMS.cc
@@ -36,7 +26,7 @@ target_link_libraries(mission_interface
     redis++_static
 )
 
-set_target_properties(flyMS test_webserver PruManager mission_interface
+set_target_properties(flyMS test_webserver mission_interface
   PROPERTIES
   LINK_FLAGS "-static-libstdc++ -static-libgcc"
   # LINK_FLAGS "-static"

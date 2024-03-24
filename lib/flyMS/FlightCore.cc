@@ -26,9 +26,11 @@
 
 namespace flyMS {
 
-FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params)
+FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_controller, const YAML::Node &config_params,
+                       std::shared_ptr<PruRequester> pru_requester)
     : flight_mode_(static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>())),
       config_params_(config_params),
+      pru_requester_(pru_requester),
       imu_module_(Imu::getInstance()),
       ulog_(),
       setpoint_module_(std::move(setpoint)),
@@ -37,10 +39,10 @@ FlightCore::FlightCore(Setpoint &&setpoint, PositionController &&position_contro
   log_filepath_ = config_params["log_filepath"].as<std::string>();
 }
 
-FlightCore::FlightCore(const YAML::Node &config_params)
+FlightCore::FlightCore(const YAML::Node &config_params, std::shared_ptr<PruRequester> pru_requester)
     : FlightCore(
           Setpoint(static_cast<FlightMode>(config_params["flight_mode"].as<uint32_t>()), config_params["setpoint"]),
-          PositionController(config_params["position_controller"]), config_params) {}
+          PositionController(config_params["position_controller"]), config_params, pru_requester) {}
 
 bool FlightCore::init() {
   // Create a file for logging and initialize our file logger
@@ -76,11 +78,6 @@ bool FlightCore::init() {
   gyro_lpf_pitch_ = DigitalFilter(lpf_num, lpf_den);
   gyro_lpf_yaw_ = DigitalFilter(lpf_num, lpf_den);
 
-  // Request access to use the PRU, which we use to send commands to ESCs
-  if (!pru_requester_.request_access()) {
-    spdlog::error("Failed to get access to PRU");
-    return false;
-  }
   // Start the flight program
   std::function<void(StateData &)> func = std::bind(&FlightCore::flight_core, this, std::placeholders::_1);
   imu_module_.init(config_params_["imu_params"], kFLYMS_CONTROL_LOOP_FREQUENCY, func);
@@ -89,19 +86,6 @@ bool FlightCore::init() {
 }
 
 void FlightCore::flight_core(StateData &imu_data_body) {
-  static bool first_run = true;
-  if (first_run) {
-    // Send -0.1 to the ESCs for one second to initialize them
-    std::vector<float> zero_command(4, -0.1);
-    auto time_start = std::chrono::high_resolution_clock::now();
-    while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - time_start) <
-           std::chrono::seconds(1)) {
-      pru_requester_.send_command(zero_command);
-      std::this_thread::sleep_for(std::chrono::microseconds(kFLYMS_CONTROL_LOOP_PERIOD_US));
-    }
-    first_run = false;
-  }
-
   // Apply the low pass filters on the gyroscope data
   imu_data_body.eulerRate[0] = gyro_lpf_roll_.update_filter(imu_data_body.eulerRate[0]);
   imu_data_body.eulerRate[1] = gyro_lpf_pitch_.update_filter(imu_data_body.eulerRate[1]);
@@ -156,7 +140,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
 
   // Send commands to motors/ESCs
   if constexpr (!kDEBUG_MODE) {
-    pru_requester_.send_command(u);
+    pru_requester_->send_command(u);
   }
 
   // Check the kill Switch and Shutdown if set

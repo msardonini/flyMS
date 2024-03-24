@@ -2,10 +2,6 @@
 %debian ALL= NOPASSWD: /bin/systemctl stop flyMS
 %debian ALL= NOPASSWD: /bin/systemctl restart flyMS
 
-%debian ALL= NOPASSWD: /bin/systemctl start PruManager
-%debian ALL= NOPASSWD: /bin/systemctl stop PruManager
-%debian ALL= NOPASSWD: /bin/systemctl restart PruManager
-
 %debian ALL= NOPASSWD: /bin/systemctl start flyMS_webserver
 %debian ALL= NOPASSWD: /bin/systemctl stop flyMS_webserver
 %debian ALL= NOPASSWD: /bin/systemctl restart flyMS_webserver

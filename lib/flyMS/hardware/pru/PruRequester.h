@@ -11,169 +11,148 @@
  */
 #pragma once
 
-#include <array>
-#include <condition_variable>
-#include <mutex>
+#include <sys/file.h>
+#include <unistd.h>
 
-#include "flyMS/hardware/pru/pru_messages.h"
-#include "flyMS/ipc/redis/RedisPublisher.h"
-#include "flyMS/ipc/redis/RedisSubscriber.h"
+#include <cerrno>
+#include <filesystem>
+#include <fstream>
+
 #include "rc/servo.h"
 #include "spdlog/spdlog.h"
 
 namespace flyMS {
 
-constexpr auto kPOLL_TIMEOUT =
-    std::chrono::seconds(1);  //< The time we wait for a message to be received from the PruManager
+constexpr char kPRU_LOCK_FILE[] = "/tmp/pru_lock_file";
 
 /**
  * @brief The PruRequester is a class that helps handle the ownership of the programmable real-time unit (PRU) on the
- * BeagleBone, which gives commands to ESCs/motors. The PruRequester communicates with the PruManager to gain access to
- * the PRU hardware. If access is granted, the PruRequester is able to send commands to the PRU. The member functions
- * that can be used to interface with this object are:
- * - PruRequester::request_access() - Requests access to the PRU from the PruManager
- * - PruRequester::release_access() - Releases access to the PRU, notify the PruManager
+ * BeagleBone, which gives commands to ESCs/motors. It is critical that only one process is able to commands to the PRU
+ at a time. Thus, this object creates a lockfile saved at 'kPRU_LOCK_FILE' to ensure that only one process can access
+ the PRU at a time. On construction, the object will spawn a thread that continuously sends zero commands to the PRU.
+ This prevents ESC's from 'chirping' due to not receiving commands. The zero sender thread will run until 'send_command'
+ is called, at which point it will stop the zero sender thread and send the new command. The zero sender thread can be
+ restarted by calling 'start_zero_sender'.
+ * - PruRequester::PruRequestor() - Construct the object and lock the PRU. Throw an exception if the lock fails.
  * - PruRequester::send_command() - Sends a command to the PRU
  *
  *  Example usage is:
  * ```
  * {
  *   PruRequester pru_requester;
- *   if (pru_requester.request_access()) {
+ *   // The motors will be receiving zero commands until send_command is called
+ *   while (in_control_loop) {
  *     std::array<float, 4> motor_commands{0.0, 0.0, 0.0, 0.0};
- *     pru_requester.send_command(motor_commands);
+ *     if(!pru_requester.send_command(motor_commands)) {
+ *       // handle error
+ *     }
  *   }
- * } // release access to the PRU on destruction
+ *  // Start the zero_sender thread again now the control loop is done
+ *  pru_requester.start_zero_sender();
+ * } // release the pru lock file on destruction
  * ```
-
- * The messages this object uses to communicate with the PruManager are defined in pru_messages.h
+ *
  */
 class PruRequester {
  public:
   /**
-   * @brief Construct a new Pru Requester object. Initializes the RedisSubscriber and RedisPublisher objects used for
-   * inter process communication
-   *
+   * @brief Construct a new Pru Requester object
    */
-  PruRequester()
-      : redis_subscriber_(std::bind(&PruRequester::redis_callback, this, std::placeholders::_1, std::placeholders::_2),
-                          {kredis_request_response_channel, kredis_release_response_channel},
-                          [](const sw::redis::Error& er) {}) {}
-
-  /**
-   * @brief Destroy the Pru Requester object. If the PruRequester has PRU ownship at this time, it will release access
-   * here
-   *
-   */
-  ~PruRequester() {
-    if (has_ownership_of_pru_) {
-      release_access();
+  PruRequester() {
+    lock_file_ = open(kPRU_LOCK_FILE, O_CREAT | O_RDWR, 0666);
+    if (lock_file_ == -1) {
+      throw std::runtime_error("Failed to open the PRU lock file!");
     }
-  }
 
-  /**
-   * @brief Request access to the PRU from the PruManager. If access is granted, the PruRequester will be able to send
-   * commands to the PRU via the send_command() member function.
-   *
-   * @return true Access to the PRU was granted
-   * @return false Access to the PRU was denied
-   */
-  bool request_access() {
-    PruRequest request{.pid = getpid()};
-    redis_publisher_.publish(kredis_request_channel, to_yaml(request));
-    std::unique_lock<std::mutex> lock(cv_mutex_);
-    if (!cv_.wait_for(lock, kPOLL_TIMEOUT, [this]() { return response_received_; })) {
-      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruManager running?");
-    }
-    response_received_ = false;
-
-    if (response_.success) {
-      has_ownership_of_pru_ = true;
-      spdlog::info("Got access to PRU, initializing it now");
-      rc_servo_init();
-      return true;
-    } else {
-      spdlog::error("Could not get access to PRU. Reason: {}", response_.reason);
-      return false;
-    }
-  }
-
-  /**
-   * @brief Release access to the PRU. This will notify the PruManager that the PruRequester no longer needs access to
-   * the PRU.
-   *
-   * @return true Release was successful
-   * @return false Release was unsuccessful
-   */
-  bool release_access() {
-    rc_servo_cleanup();
-    has_ownership_of_pru_ = false;
-
-    PruRequest request{.pid = getpid()};
-    redis_publisher_.publish(kredis_release_channel, to_yaml(request));
-    std::unique_lock<std::mutex> lock(cv_mutex_);
-    if (!cv_.wait_for(lock, kPOLL_TIMEOUT, [this]() { return response_received_; })) {
-      throw std::runtime_error("Timeout waiting for response from PRU. Is the PruManager running?");
-    }
-    response_received_ = false;
-
-    if (response_.success) {
-      return true;
-    } else {
-      throw std::runtime_error("Could not release access to PRU. Reason: " + response_.reason);
-    }
-  }
-
-  /**
-   * @brief Send a command to the PRU. This will only work if the PruRequester has access to the PRU.
-   *
-   * @param command The command to send to the PRU
-   */
-  void send_command(std::vector<float>& commands) {
-    if (!has_ownership_of_pru_) {
-      throw std::runtime_error("Cannot send command to PRU. Do not have ownership of PRU.");
-    }
-    int channel = 1;
-    for (const auto& cmd : commands) {
-      if (rc_servo_send_esc_pulse_normalized(channel++, cmd)) {
-        spdlog::error("Failed to send command to PRU");
+    if (flock(lock_file_, LOCK_EX | LOCK_NB) == -1) {
+      if (errno == EWOULDBLOCK) {
+        throw std::runtime_error("Failed to lock the PRU lock file, another process currently holds the lock!");
+      } else {
+        throw std::runtime_error("Failed to lock the PRU lock file!");
       }
     }
+
+    if (rc_servo_init()) {
+      throw std::runtime_error("Failed to initialize the PRU/ESC!");
+    }
+
+    start_zero_sender();
+  }
+
+  ~PruRequester() {
+    zero_sender_running_ = false;
+    if (zero_sender_thread.joinable()) {
+      zero_sender_thread.join();
+    }
+    flock(lock_file_, LOCK_UN);
+  }
+
+  /**
+   * @brief Sends commands to ESCs, and stops the zero sender thread if it is running
+   *
+   * @param motor_commands commands in the range [0, 1] to send to the ESCs
+   * @return true on success
+   * @return false on failure
+   */
+  bool send_command(const std::vector<float>& motor_commands) {
+    if (motor_commands.size() > RC_SERVO_CH_MAX) {
+      spdlog::error("Too many motor commands! Max is {}", RC_SERVO_CH_MAX);
+      return false;
+    }
+
+    // If the zero sender is running, stop it
+    if (zero_sender_running_) {
+      zero_sender_running_ = false;
+      if (zero_sender_thread.joinable()) {
+        zero_sender_thread.join();
+      }
+    }
+
+    int channel = 1;
+    for (const auto& cmd : motor_commands) {
+      if (rc_servo_send_esc_pulse_normalized(channel++, cmd)) {
+        spdlog::error("Failed to send command to the PRU/ESC!");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool start_zero_sender() {
+    if (zero_sender_running_) {
+      spdlog::error("Zero sender is already running!");
+      return false;
+    }
+    zero_sender_running_ = true;
+    zero_sender_thread = std::thread(&PruRequester::zero_sender, this);
+    return true;
   }
 
  private:
-  /**
-   * @brief Callback function for the RedisSubscriber for when messages are received
-   *
-   * @param channel The channel the message was received on
-   * @param message The message that was received
-   */
-  void redis_callback(std::string_view channel, std::string_view message) {
-    // TODO handle channels differently
-    if (channel == std::string(kredis_request_response_channel)) {
-      spdlog::info("Received request response");
-      response_ = from_yaml<PruResponse>(YAML::Load(message.data()));
-      response_received_ = true;
-      cv_.notify_one();
-    } else if (channel == std::string(kredis_release_response_channel)) {
-      spdlog::info("Received release response");
-      response_ = from_yaml<PruResponse>(YAML::Load(message.data()));
-      spdlog::info("{}", response_.reason);
-      response_received_ = true;
-      cv_.notify_one();
-    } else {
-      spdlog::error("Received message on unknown channel: {}", channel);
+  void zero_sender() {
+    std::vector<float> zero_command(RC_SERVO_CH_MAX);
+    for (auto& cmd : zero_command) {
+      cmd = 0.0;
+    }
+
+    spdlog::info("Starting zero sender thread");
+    while (zero_sender_running_) {
+      int channel = 1;
+      for (const auto& cmd : zero_command) {
+        if (rc_servo_send_esc_pulse_normalized(channel++, cmd)) {
+          spdlog::error("Failed to send command to the PRU/ESC!");
+          return;
+        }
+      }
+
+      // Run at 200 Hz
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
   }
 
-  RedisSubscriber redis_subscriber_;  //< For receiving messages from the PruManager
-  RedisPublisher redis_publisher_;    //< For sending messages to the PruManager
-  PruResponse response_;              //< The response received from the PruManager
-
-  std::mutex cv_mutex_;                //< Mutex for the condition variable
-  std::condition_variable cv_;         //< For synchronizing requests/responses
-  bool response_received_ = false;     //< has a response been received from the PruManager
-  bool has_ownership_of_pru_ = false;  //< Flag for PRU ownership
+  std::thread zero_sender_thread;
+  std::atomic<bool> zero_sender_running_{false};
+  int lock_file_ = -1;  //< File to lock access to the PRU
 };
 
 }  // namespace flyMS

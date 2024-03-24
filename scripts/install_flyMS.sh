@@ -7,14 +7,12 @@ pushd $SCRIPT_DIR
 # Enable the services needed for flyMS
 sudo cp services/flyMS.service /etc/systemd/system/
 sudo cp services/flyMS_webserver.service /etc/systemd/system/
-sudo cp services/PruManager.service /etc/systemd/system/
 sudo cp services/mission_interface.service /etc/systemd/system/
 sudo cp services/mem_permissions.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
 sudo systemctl enable flyMS
 sudo systemctl enable flyMS_webserver
-sudo systemctl enable PruManager
 sudo systemctl enable mission_interface
 sudo systemctl enable mem_permissions.service
 

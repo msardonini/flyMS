@@ -1,7 +1,7 @@
 
+add_subdirectory(eigen)
 add_subdirectory(yaml-cpp)
 add_subdirectory(spdlog)
-add_subdirectory(eigen)
 add_subdirectory(redis-plus-plus)
 
 add_library(mavlink_v2 INTERFACE)

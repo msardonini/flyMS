@@ -37,7 +37,7 @@ Uart::Uart(const std::filesystem::path &serial_dev,
 
   // One input byte is enough to return from read() Inter-character timer off
   serial_config.c_cc[VMIN] = 0;
-  serial_config.c_cc[VTIME] = 0;
+  serial_config.c_cc[VTIME] = 10;
 
   // Communication speed (simple version, using the predefined constants)
   if (cfsetispeed(&serial_config, B115200) < 0 || cfsetospeed(&serial_config, B115200) < 0) {
@@ -87,7 +87,7 @@ void Uart::serial_read_thread() {
       // Sleep so we don't overload the CPU. This isn't an ideal method, but if use a blocking call on read(), we
       // can't break out of it on the destruction of this object. It will hang forever until bytes are read, which is
       // not always the case
-      std::this_thread::sleep_for(std::chrono::microseconds(100));
+      // std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
 }
