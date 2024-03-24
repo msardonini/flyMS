@@ -13,7 +13,7 @@
 #include <array>
 #include <cstdint>
 
-#include "flyMS/types/state_data.h"
+#include "flyMS/common/state_data.h"
 
 namespace flyMS {
 

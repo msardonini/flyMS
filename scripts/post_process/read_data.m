@@ -13,7 +13,7 @@ nohup=csvread([filepath filename],1,0);
 % nohup(1,:) = []; % discard first log
 
 time=nohup(:,1);
-6
+
 roll=nohup(:,2);
 pitch=nohup(:,3);
 yaw=nohup(:,4);
@@ -35,10 +35,10 @@ wing2=nohup(:,15);
 wing3=nohup(:,16);
 wing4=nohup(:,17);
 
-upitch=nohup(:,18);
+throttle=nohup(:,18);
 uroll=nohup(:,19);
-uyaw=nohup(:,20);
-throttle=nohup(:,21);
+upitch=nohup(:,20);
+uyaw=nohup(:,21);
 
 pitch_ref=nohup(:,22);
 roll_ref=nohup(:,23);

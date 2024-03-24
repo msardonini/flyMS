@@ -1,5 +1,5 @@
 /**
- * @file DigitalFilter.hpp
+ * @file DigitalFilter.h
  * @author Mike Sardonini (msardonini@gmail.com)
  * @brief DigitalFilter class
  * @version 0.1

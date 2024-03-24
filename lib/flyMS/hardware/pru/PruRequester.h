@@ -23,7 +23,7 @@
 
 namespace flyMS {
 
-constexpr char kPRU_LOCK_FILE[] = "/tmp/pru_lock_file";
+constexpr char kPRU_LOCK_FILE[] = "/home/debian/.flyMS/pru.lock";
 
 /**
  * @brief The PruRequester is a class that helps handle the ownership of the programmable real-time unit (PRU) on the

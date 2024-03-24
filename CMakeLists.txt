@@ -6,8 +6,9 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Set options
-option(BUILD_TESTS "Build tests" OFF)
 option(CROSS_COMPILE "Cross compile" ON)
+option(FLYMS_BUILD_TESTS "Build tests" OFF)
+option(CODE_COVERAGE "Build unit tests with code coverage" OFF)
 
 # # Get the architecture of the CPU building this
 EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
@@ -41,6 +42,20 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Settings for Unit Tests
+if (FLYMS_BUILD_TESTS)
+  enable_testing()
+  include(cmake/unit_test_helpers.cmake)
+
+  message(STATUS "Overriding build type for code coverage")
+  set(CMAKE_BUILD_TYPE DEBUG)
+  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ftest-coverage -fprofile-arcs")
+
+  # These commands will have no effect if the CODE_COVERAGE variable is not set to ON
+  include(cmake/code_coverage.cmake)
+  add_code_coverage_all_targets(EXCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/external* *test* /usr*)
+endif()
 
 add_subdirectory(external)
 

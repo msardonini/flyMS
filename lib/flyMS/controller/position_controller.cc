@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "flyMS/controller/constants.h"
+#include "flyMS/common/constants.h"
 
 namespace flyMS {
 

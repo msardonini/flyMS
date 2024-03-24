@@ -29,6 +29,6 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     )
 endif()
 
-if (BUILD_TESTING)
-  add_subdirectory(tests)
+if (FLYMS_BUILD_TESTS)
+  add_subdirectory(test)
 endif()

@@ -11,7 +11,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "flyMS/controller/constants.h"
+#include "flyMS/common/constants.h"
 #include "flyMS/hardware/RemoteController.h"
 #include "flyMS/util/debug_mode.h"
 #include "spdlog/spdlog.h"
@@ -46,35 +46,36 @@ Setpoint::Setpoint(FlightMode flight_mode, const YAML::Node& config_params)
 
 Setpoint::~Setpoint() {}
 
-std::vector<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
-  std::vector<float> setpoint_outputs(4);
-  // Set the throttle
-  setpoint_outputs[0] =
-      (remote_control_data[kRC_THROTTLE_INDEX] + 1.0) / 2.0 * (throttle_limits_[1] - throttle_limits_[0]) +
+TRPY<float> Setpoint::calculate_setpoint_data(const std::vector<float>& remote_control_data) {
+  TRPY<float> setpoint_outputs;
+
+  // Set the throttle, scale to 0-1 range then apply min/max throttle limits
+  setpoint_outputs.throttle() =
+      ((remote_control_data[kFLYMS_THROTTLE_INDEX] + 1) / 2) * (throttle_limits_[1] - throttle_limits_[0]) +
       throttle_limits_[0];
 
   // Set roll/pitch reference value
   // DSM2 Receiver is inherently positive to the left
   if (flight_mode_ == FlightMode::STABILIZED) {  // Stabilized Flight Mode
-    setpoint_outputs[1] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_stabilized_[0];
-    setpoint_outputs[2] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_stabilized_[1];
+    setpoint_outputs.roll() = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_stabilized_[0];
+    setpoint_outputs.pitch() = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_stabilized_[1];
   } else if (flight_mode_ == FlightMode::ACRO) {
-    setpoint_outputs[1] = -remote_control_data[kRC_ROLL_INDEX] * max_setpoints_acro_[0];
-    setpoint_outputs[2] = remote_control_data[kRC_PITCH_INDEX] * max_setpoints_acro_[1];
+    setpoint_outputs.roll() = -remote_control_data[kFLYMS_ROLL_INDEX] * max_setpoints_acro_[0];
+    setpoint_outputs.pitch() = remote_control_data[kFLYMS_PITCH_INDEX] * max_setpoints_acro_[1];
   } else {
     throw std::runtime_error("Error! Invalid flight mode");
   }
 
   // Set Yaw, RC Controller acts on Yaw velocity, save a history for integration
   // Apply the integration outside of current if statement, needs to run at 200Hz
-  auto yaw_rate = remote_control_data[kRC_YAW_INDEX] * max_setpoints_stabilized_[2];
+  auto yaw_rate = remote_control_data[kFLYMS_YAW_INDEX] * max_setpoints_stabilized_[2];
 
   // Apply a deadzone to keep integrator from wandering
   if (std::abs(yaw_rate) < kYAW_DEADZONE_THRESH_RAD_S) {
     yaw_rate = 0;
   }
 
-  setpoint_outputs[3] = yaw_integrator_.update_filter(yaw_rate);
+  setpoint_outputs.yaw() = yaw_integrator_.update_filter(yaw_rate);
 
   return setpoint_outputs;
 }

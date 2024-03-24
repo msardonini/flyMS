@@ -48,7 +48,7 @@ function submit_controller(form) {
     alert(displayName + " has an incorrect value of " + pitch_outer);
     return;
   }
-  const yaw_PID = [form.Kp_yaw.value, form.Ki_yaw.value, form.Ki_yaw.value];
+  const yaw_PID = [form.Kp_yaw.value, form.Ki_yaw.value, form.Kd_yaw.value];
   if (!check_array_value(yaw_PID, 0, Number.MAX_VALUE, 3)) {
     const displayName = varToString({ yaw_PID });
     alert(displayName + " has an incorrect value of " + yaw_PID);

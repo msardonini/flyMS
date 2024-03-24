@@ -9,11 +9,12 @@
 
 namespace flyMS {
 
-static constexpr uint32_t kCONNECTION_MONITOR_LOOP_FRQ = 10;
-static constexpr auto kCONNECTION_MONITOR_LOOP_SLEEP_TIME =
-    std::chrono::microseconds(1000000 / kCONNECTION_MONITOR_LOOP_FRQ);
-static constexpr uint32_t kCONNECTION_MONITOR_TIMEOUT_NS = 1000000000;                      //< 1 second
-static constexpr auto kWAIT_FOR_DATA_PACKET_SLEEP_TIME = std::chrono::microseconds(10000);  //< 10 ms, this is polled
+constexpr int kMAX_REQUIRED_RC_CHANNELS = 6;
+constexpr float kERROR_TOLERANCE = 0.1;
+constexpr uint32_t kCONNECTION_MONITOR_LOOP_FRQ = 10;
+constexpr auto kCONNECTION_MONITOR_LOOP_SLEEP_TIME = std::chrono::microseconds(1000000 / kCONNECTION_MONITOR_LOOP_FRQ);
+constexpr uint32_t kCONNECTION_MONITOR_TIMEOUT_NS = 1000000000;                      //< 1 second
+constexpr auto kWAIT_FOR_DATA_PACKET_SLEEP_TIME = std::chrono::microseconds(10000);  //< 10 ms, this is polled
 
 RemoteController& RemoteController::get_instance() {
   static RemoteController instance;
@@ -52,8 +53,15 @@ std::vector<float> RemoteController::get_channel_data() {
 
 void RemoteController::data_callback() {
   std::vector<float> channel_data(RC_MAX_DSM_CHANNELS);
-  for (auto i = 0; i < RC_MAX_DSM_CHANNELS; i++) {
+  for (auto i = 0; i < kMAX_REQUIRED_RC_CHANNELS; i++) {
     channel_data[i] = rc_dsm_ch_normalized(i + 1);
+    if (channel_data[i] < (-1.f - kERROR_TOLERANCE) || channel_data[i] > (1.f + kERROR_TOLERANCE)) {
+      spdlog::error(
+          "Channel {} has value {} which is outside of the expected range [-1, 1]. Please run rc_calibrate_dsm. "
+          "Shutting down program",
+          i, channel_data[i]);
+      rc_set_state(EXITING);
+    }
   }
   auto& this_instance = RemoteController::get_instance();
   this_instance.set_channel_values(std::move(channel_data));

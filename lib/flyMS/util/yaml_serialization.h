@@ -17,6 +17,8 @@
 #include <string>
 #include <tuple>
 
+namespace flyMS {
+
 template <typename Class, typename T>
 struct PropertyImpl {
   constexpr PropertyImpl(T Class::*aMember, const char* aName) : member{aMember}, name{aName} {}
@@ -78,6 +80,8 @@ YAML::Node to_yaml(const T& object) {
 
   return data;
 }
+
+}  // namespace flyMS
 
 // /**
 //  * @brief The following is an example of how to use the above code to create a serializable struct

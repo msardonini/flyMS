@@ -3,6 +3,10 @@
 #include "flyMS/ipc/mavlink/MavlinkRedisSubQueue.h"
 #include "gtest/gtest.h"
 
+constexpr auto kREDIS_TIMEOUT = std::chrono::seconds(10);
+constexpr auto kPUBLISH_DELAY = std::chrono::milliseconds(10);
+constexpr auto kWAIT_DT = std::chrono::microseconds(10);
+
 class MavlinkRedisTestFixture : public ::testing::Test {
  public:
   MavlinkRedisTestFixture() = default;
@@ -36,11 +40,15 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceive) {
 
   sub.register_message<mavlink_odometry_t, MAVLINK_MSG_ID_ODOMETRY>(odom_callback, &mavlink_msg_odometry_decode);
 
-  pub.publish<mavlink_odometry_t>(test_channel, odom_msg_send, &mavlink_msg_odometry_encode);
+  auto pub_func = [&]() {
+    std::this_thread::sleep_for(kPUBLISH_DELAY);
+    pub.publish<mavlink_odometry_t>(test_channel, odom_msg_send, &mavlink_msg_odometry_encode);
+  };
+
+  std::thread pub_thread(pub_func);
 
   std::unique_lock<std::mutex> lock(cv_mutex);
-
-  if (cond_var.wait_for(lock, std::chrono::seconds(3)) == std::cv_status::timeout) {
+  if (cond_var.wait_for(lock, kREDIS_TIMEOUT) == std::cv_status::timeout) {
     FAIL() << "Timed out waiting for Redis Message!";
   }
 
@@ -48,6 +56,8 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceive) {
   EXPECT_EQ(odom_msg_send.x, odom_msg_receive.x);
   EXPECT_EQ(odom_msg_send.y, odom_msg_receive.y);
   EXPECT_EQ(odom_msg_send.q[3], odom_msg_receive.q[3]);
+
+  pub_thread.join();
 }
 
 TEST_F(MavlinkRedisTestFixture, SendAndReceiveWithQueue) {
@@ -63,13 +73,15 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceiveWithQueue) {
 
   auto odom_queue =
       sub_queue.register_message_with_queue<mavlink_odometry_t, MAVLINK_MSG_ID_ODOMETRY>(&mavlink_msg_odometry_decode);
+
+  std::this_thread::sleep_for(kPUBLISH_DELAY);
   pub.publish<mavlink_odometry_t>(test_channel, odom_msg_send, &mavlink_msg_odometry_encode);
 
   // Wait for message to show up
   auto start = std::chrono::system_clock::now();
   while (odom_queue->size() == 0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    if (std::chrono::system_clock::now() > start + std::chrono::seconds(3)) {
+    std::this_thread::sleep_for(kWAIT_DT);
+    if (std::chrono::system_clock::now() > start + kREDIS_TIMEOUT) {
       FAIL() << "Timed out waiting for Redis Message!";
     }
   }
@@ -97,14 +109,15 @@ TEST_F(MavlinkRedisTestFixture, SendAndReceiveManyWithQueue) {
       sub_queue.register_message_with_queue<mavlink_odometry_t, MAVLINK_MSG_ID_ODOMETRY>(&mavlink_msg_odometry_decode);
 
   for (auto i = 0; i < num_msgs; i++) {
+    std::this_thread::sleep_for(kPUBLISH_DELAY);
     pub.publish<mavlink_odometry_t>(test_channel, odom_msg_send, &mavlink_msg_odometry_encode);
   }
 
   // Wait for message to show up
   auto start = std::chrono::system_clock::now();
   while (odom_queue->size() < num_msgs) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    if (std::chrono::system_clock::now() > start + std::chrono::seconds(3)) {
+    std::this_thread::sleep_for(kWAIT_DT);
+    if (std::chrono::system_clock::now() > start + kREDIS_TIMEOUT) {
       FAIL() << "Timed out waiting for Redis Message!";
     }
   }

@@ -16,8 +16,8 @@ PidFile::PidFile(const std::filesystem::path &pid_file_path) : pid_file_path_(pi
     pid_file >> pid;
     pid_file.close();
 
-    // Check if there is a process running with this PID
-    if (kill(pid, 0) == 0) {
+    // If the PID is valid, Check if there is a process running with this PID
+    if (pid_file.good() && kill(pid, 0) == 0) {
       throw std::runtime_error("Cannot start Process with pid file " + pid_file_path.filename().string() +
                                ", another instance is already running.");
     } else {

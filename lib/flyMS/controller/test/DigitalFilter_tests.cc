@@ -9,8 +9,14 @@
  *
  */
 
-#include "flyMS/controller/DigitalFilter.hpp"
+#include "flyMS/controller/DigitalFilter.h"
 #include "gtest/gtest.h"
+#include "spdlog/spdlog.h"
+
+TEST(DigitalFilterTests, Ctor) { flyMS::DigitalFilter({1., 0.}, {1., 0.}); }
+
+TEST(DigitalFilterTests, EmptyCtor) { EXPECT_THROW(flyMS::DigitalFilter({}, {}), std::invalid_argument); }
+TEST(DigitalFilterTests, InvalidCtor) { EXPECT_THROW(flyMS::DigitalFilter({1.}, {1., 0.}), std::invalid_argument); }
 
 TEST(DigitalFilterTests, LowPass) {
   std::vector<double> num{0.156832694556443,  1.427422676153595,  5.976558883724950,  15.145889466394246,
@@ -58,4 +64,19 @@ TEST(DigitalFilterTests, SimpleIntegratorTest) {
   for (auto i = 0; i < 1000; i++) {
     EXPECT_DOUBLE_EQ(i, filt.update_filter(1.));
   }
+}
+
+TEST(DigitalFilterTests, NonLeadingOneInDen) {
+  // This test issues warnings, turn off spdlog for this test
+  auto level = spdlog::get_level();
+  spdlog::set_level(spdlog::level::off);
+
+  // By convention, the denominator should have a leading one. Test the edge case where it's not
+  flyMS::DigitalFilter filt({0.f, 5.f}, {5.f, -5.f});
+
+  for (auto i = 0; i < 10; i++) {
+    EXPECT_DOUBLE_EQ(i, filt.update_filter(1.));
+  }
+
+  spdlog::set_level(level);
 }

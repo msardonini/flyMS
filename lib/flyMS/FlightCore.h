@@ -27,16 +27,16 @@
 #include <thread>
 #include <vector>
 
+#include "flyMS/common/flight_mode.h"
+#include "flyMS/common/state_data.h"
 #include "flyMS/controller/AttitudeController.h"
-#include "flyMS/controller/DigitalFilter.hpp"
+#include "flyMS/controller/DigitalFilter.h"
 #include "flyMS/controller/Setpoint.h"
 #include "flyMS/hardware/Imu.h"
 #include "flyMS/hardware/gps.h"
 #include "flyMS/hardware/pru/PruRequester.h"
 #include "flyMS/ipc/mavlink/MavlinkRedisPub.h"
 #include "flyMS/ipc/mavlink/MavlinkRedisSubQueue.h"
-#include "flyMS/types/flight_mode.h"
-#include "flyMS/types/state_data.h"
 #include "flyMS/ulog/ulog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/spdlog.h"

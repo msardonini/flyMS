@@ -8,14 +8,6 @@
 
 namespace flyMS {
 
-// Verbose names for the physical channels of the remote controller
-static constexpr uint32_t kRC_THROTTLE_INDEX = 0;
-static constexpr uint32_t kRC_ROLL_INDEX = 1;
-static constexpr uint32_t kRC_PITCH_INDEX = 2;
-static constexpr uint32_t kRC_YAW_INDEX = 3;
-static constexpr uint32_t kRC_KILL_SWITCH_INDEX = 4;
-static constexpr uint32_t kRC_FLIGHT_MODE_INDEX = 5;
-
 /**
  * @brief Get commands from the remote controller via the DSM2 protocol. This class is a singleton, because there is
  * only once piece of hardware for reading the remote controller. Under the hood, the rc_dsm module from the
@@ -26,8 +18,8 @@ static constexpr uint32_t kRC_FLIGHT_MODE_INDEX = 5;
  * auto& rc = RemoteController::get_instance();
  * while(true) {
  *   auto rc_data = rc.get_channel_values();
- *   float throttle = rc_data[kRC_THROTTLE_INDEX];
- *   float roll = rc_data[kRC_ROLL_INDEX];
+ *   float throttle = rc_data[kFLYMS_THROTTLE_INDEX];
+ *   float roll = rc_data[kFLYMS_ROLL_INDEX];
  *   // ...
  * }
  * @endcode
@@ -47,7 +39,7 @@ class RemoteController {
 
   /**
    * @brief Get the channel values. The values are normalized to the range [-1, 1]. The provided indexes can help
-   * identify which channel is which, e.g. kRC_THROTTLE_INDEX, kRC_ROLL_INDEX, etc.
+   * identify which channel is which, e.g. kFLYMS_THROTTLE_INDEX, kFLYMS_ROLL_INDEX, etc.
    *
    * @return std::vector<float>
    */
