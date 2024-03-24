@@ -154,7 +154,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
   }
 
   // Check if the flight mode has changed
-  if (!flyStereo_running_ && remote_data[kRC_FLIGHT_MODE_INDEX] > 0.5) {
+  if (!flyStereo_running_ && remote_data[kFLYMS_FLIGHT_MODE_INDEX] > 0.5) {
     spdlog::info("Turning on flyStereo!");
     flyStereo_running_ = true;
 
@@ -162,7 +162,7 @@ void FlightCore::flight_core(StateData &imu_data_body) {
     command_int.command = MAV_CMD_NAV_GUIDED_ENABLE;
     mavlink_publisher_->publish<mavlink_command_int_t>(kFLY_STEREO_CHANNEL, command_int,
                                                        &mavlink_msg_command_int_encode);
-  } else if (flyStereo_running_ && remote_data[kRC_FLIGHT_MODE_INDEX] < 0.5) {
+  } else if (flyStereo_running_ && remote_data[kFLYMS_FLIGHT_MODE_INDEX] < 0.5) {
     spdlog::info("Turning off flyStereo!");
     flyStereo_running_ = false;
 
